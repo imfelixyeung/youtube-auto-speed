@@ -4,12 +4,21 @@ type CaptionInterval = {
     start: number;
     end: number;
 };
-type State = "talking" | "silent" | "normal";
+type State =
+    | "talking"
+    | "silent"
+    | "normal"
+    | "about-to-talk"
+    | "finished-talking";
+const stateToSpeed: Record<State, number> = {
+    talking: 1.0,
+    silent: 2.0,
+    normal: 1.0,
+    "about-to-talk": 1.0,
+    "finished-talking": 1.5,
+};
 
 (() => {
-    const NORMAL_SPEED = 1.0;
-    const FAST_SPEED = 2.0;
-
     let video: HTMLVideoElement | null = null;
 
     let captionIntervals: CaptionInterval[] = [];
@@ -157,11 +166,8 @@ type State = "talking" | "silent" | "normal";
 
         currentState = state;
 
-        if (state === "talking") {
-            setSpeed(NORMAL_SPEED);
-        } else {
-            setSpeed(FAST_SPEED);
-        }
+        const speed = stateToSpeed[currentState];
+        setSpeed(speed);
     }
 
     function updateSpeed() {
@@ -170,20 +176,27 @@ type State = "talking" | "silent" | "normal";
         }
 
         if (video.paused || video.ended) {
-            setSpeed(NORMAL_SPEED);
-            currentState = "normal";
+            setState("normal");
 
             return;
         }
 
         const talking = isTalking(video.currentTime);
-        log(talking ? "talking" : "not talking");
 
         if (talking) {
-            setState("talking");
-        } else {
-            setState("silent");
+            return setState("talking");
         }
+
+        const GAP = 0.5;
+
+        if (isTalking(video.currentTime - GAP)) {
+            return setState("finished-talking");
+        }
+        if (isTalking(video.currentTime + GAP)) {
+            return setState("about-to-talk");
+        }
+
+        setState("silent");
     }
 
     function tick() {
@@ -201,21 +214,17 @@ type State = "talking" | "silent" | "normal";
 
         video = newVideo;
 
-        currentState = "normal";
-
-        setSpeed(NORMAL_SPEED);
+        setState("normal");
 
         video.addEventListener("play", updateSpeed);
         video.addEventListener("playing", updateSpeed);
 
         video.addEventListener("pause", () => {
-            setSpeed(NORMAL_SPEED);
-            currentState = "normal";
+            setState("normal");
         });
 
         video.addEventListener("ended", () => {
-            setSpeed(NORMAL_SPEED);
-            currentState = "normal";
+            setState("normal");
         });
 
         video.addEventListener("seeked", updateSpeed);
