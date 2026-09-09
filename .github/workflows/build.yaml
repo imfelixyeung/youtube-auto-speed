@@ -1,0 +1,26 @@
+name: Build
+
+on:
+    push:
+    pull_request:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7.0.1
+
+            - uses: oven-sh/setup-bun@v2.2.0
+
+            - run: bun install
+
+            - name: Typecheck
+              run: make typecheck
+
+            - name: Build & package
+              run: make zip
+
+            - uses: actions/upload-artifact@v7.0.1
+              with:
+                  name: youtube-auto-speed
+                  path: youtube-auto-speed.zip

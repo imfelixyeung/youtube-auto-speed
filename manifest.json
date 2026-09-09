@@ -1,0 +1,8 @@
+{
+    "$schema": "https://www.schemastore.org/chrome-manifest.json",
+    "name": "YouTube Auto Speed",
+    "description": "Automatically speeds up YouTube when nobody is speaking",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "action": {}
+}
