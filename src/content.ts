@@ -1,19 +1,26 @@
+import type { AutoSpeedCaptionsEvent, TimedText } from "./types";
+
+type CaptionInterval = {
+    start: number;
+    end: number;
+};
 type State = "talking" | "silent" | "normal";
 
 (() => {
     const NORMAL_SPEED = 1.0;
     const FAST_SPEED = 2.0;
 
-    // How long we wait before speeding up after a caption disappears.
-    // This prevents tiny gaps between caption cues from causing constant
-    // speed changes.
-    const SILENCE_DELAY_MS = 250;
+    const SPEED_UP_DELAY_MS = 300;
+    const SLOW_DOWN_DELAY_MS = 100;
 
     let video: HTMLVideoElement | null = null;
-    let captionObserver: MutationObserver | null = null;
-    let silenceTimer: number | null = null;
 
+    let captionIntervals: CaptionInterval[] = [];
+
+    let speedTimer: number | null = null;
     let currentState: State = "normal";
+
+    let animationFrame: number | null = null;
 
     function log(...args: unknown[]) {
         console.debug("[Auto Speed]", ...args);
@@ -25,28 +32,10 @@ type State = "talking" | "silent" | "normal";
         ) as HTMLVideoElement;
     }
 
-    /**
-     * Returns true when YouTube currently has a caption displayed.
-     *
-     * YouTube creates .ytp-caption-segment elements while a caption cue
-     * is being displayed and removes them when the cue ends.
-     */
-    function hasActiveCaption() {
-        const captions = document.querySelectorAll(".ytp-caption-segment");
-
-        for (const caption of captions) {
-            const text = caption.textContent?.trim();
-
-            if (text) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     function setSpeed(speed: number) {
-        if (!video) return;
+        if (!video) {
+            return;
+        }
 
         if (video.playbackRate === speed) {
             return;
@@ -57,8 +46,116 @@ type State = "talking" | "silent" | "normal";
         log(`Playback speed: ${speed}x`);
     }
 
+    function processCaptionData(data: TimedText | null) {
+        if (!data || !Array.isArray(data.events)) {
+            return;
+        }
+
+        const intervals = [];
+
+        for (const event of data.events) {
+            if (!Array.isArray(event.segs)) {
+                continue;
+            }
+
+            if (!Number.isFinite(event.tStartMs)) {
+                continue;
+            }
+
+            if (!Number.isFinite(event.dDurationMs)) {
+                continue;
+            }
+
+            const start = event.tStartMs / 1000;
+
+            const end = (event.tStartMs + event.dDurationMs) / 1000;
+
+            // Ignore empty caption events.
+            const text = event.segs
+                .map((seg) => seg.utf8 || "")
+                .join("")
+                .trim();
+
+            if (!text) {
+                continue;
+            }
+
+            intervals.push({
+                start,
+                end,
+                text,
+            });
+        }
+
+        // Sort by start time.
+        intervals.sort((a, b) => a.start - b.start);
+
+        captionIntervals = mergeIntervals(intervals);
+
+        log(`Loaded ${captionIntervals.length} caption intervals`);
+
+        log(captionIntervals.slice(0, 10));
+    }
+
+    /**
+     * Merge overlapping / very-near caption intervals.
+     *
+     * This prevents:
+     *
+     * 10.0 - 10.5
+     * 10.5 - 11.2
+     *
+     * becoming two separate speech periods.
+     */
+    function mergeIntervals(intervals: CaptionInterval[]) {
+        if (intervals.length === 0) {
+            return [];
+        }
+
+        const merged = [];
+
+        const GAP_TO_MERGE = 0.05;
+
+        for (const interval of intervals) {
+            const previous = merged[merged.length - 1];
+
+            if (previous && interval.start <= previous.end + GAP_TO_MERGE) {
+                previous.end = Math.max(previous.end, interval.end);
+            } else {
+                merged.push({
+                    start: interval.start,
+                    end: interval.end,
+                });
+            }
+        }
+
+        return merged;
+    }
+
+    function isTalking(time: number) {
+        const intervals = captionIntervals;
+
+        if (intervals.length === 0) {
+            return false;
+        }
+
+        // Binary search would be better for huge transcripts.
+        // This version is intentionally simple.
+        for (const interval of intervals) {
+            if (time < interval.start) {
+                return false;
+            }
+
+            if (time >= interval.start && time <= interval.end) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     function setState(state: State) {
-        if (currentState === state) {
+        if (state === currentState) {
             return;
         }
 
@@ -72,53 +169,54 @@ type State = "talking" | "silent" | "normal";
     }
 
     function updateSpeed() {
-        if (!video) return;
+        if (!video) {
+            return;
+        }
 
-        // Don't interfere while the video isn't actually playing.
         if (video.paused || video.ended) {
+            speedTimer && clearTimeout(speedTimer);
+            speedTimer = null;
+
+            setSpeed(NORMAL_SPEED);
+            currentState = "normal";
+
             return;
         }
 
-        if (hasActiveCaption()) {
-            silenceTimer && clearTimeout(silenceTimer);
-            silenceTimer = null;
+        const talking = isTalking(video.currentTime);
 
-            setState("talking");
+        speedTimer && clearTimeout(speedTimer);
+        speedTimer = null;
+
+        if (talking) {
+            if (currentState !== "talking") {
+                speedTimer = setTimeout(() => {
+                    setState("talking");
+                }, SLOW_DOWN_DELAY_MS);
+            }
+
             return;
         }
 
-        // Give the next caption a small grace period.
-        silenceTimer && clearTimeout(silenceTimer);
+        if (currentState !== "silent") {
+            speedTimer = setTimeout(() => {
+                // Check again because a caption may have appeared
+                // during the delay.
+                if (!video || video.paused || video.ended) {
+                    return;
+                }
 
-        silenceTimer = setTimeout(() => {
-            if (!video || video.paused || video.ended) {
-                return;
-            }
-
-            if (hasActiveCaption()) {
-                setState("talking");
-            } else {
-                setState("silent");
-            }
-        }, SILENCE_DELAY_MS);
+                if (!isTalking(video.currentTime)) {
+                    setState("silent");
+                }
+            }, SPEED_UP_DELAY_MS);
+        }
     }
 
-    function observeCaptions() {
-        if (captionObserver) {
-            captionObserver.disconnect();
-        }
+    function tick() {
+        updateSpeed();
 
-        captionObserver = new MutationObserver(() => {
-            updateSpeed();
-        });
-
-        // The caption window itself may not exist when we start,
-        // so observe the whole player/document.
-        captionObserver.observe(document.body, {
-            subtree: true,
-            childList: true,
-            characterData: true,
-        });
+        animationFrame = requestAnimationFrame(tick);
     }
 
     function attachVideo(newVideo: HTMLVideoElement) {
@@ -126,37 +224,35 @@ type State = "talking" | "silent" | "normal";
             return;
         }
 
-        log("New video detected");
+        log("Video attached");
 
         video = newVideo;
 
-        silenceTimer && clearTimeout(silenceTimer);
-        silenceTimer = null;
+        speedTimer && clearTimeout(speedTimer);
+        speedTimer = null;
 
         currentState = "normal";
 
-        // Start at normal speed.
         setSpeed(NORMAL_SPEED);
 
-        // React immediately when playback state changes.
         video.addEventListener("play", updateSpeed);
         video.addEventListener("playing", updateSpeed);
+
         video.addEventListener("pause", () => {
-            silenceTimer && clearTimeout(silenceTimer);
+            speedTimer && clearTimeout(speedTimer);
+
             setSpeed(NORMAL_SPEED);
             currentState = "normal";
         });
 
         video.addEventListener("ended", () => {
-            silenceTimer && clearTimeout(silenceTimer);
+            speedTimer && clearTimeout(speedTimer);
+
             setSpeed(NORMAL_SPEED);
             currentState = "normal";
         });
 
-        // Seeking can jump directly from talking -> silence or vice versa.
         video.addEventListener("seeked", updateSpeed);
-
-        updateSpeed();
     }
 
     function checkForVideo() {
@@ -167,19 +263,20 @@ type State = "talking" | "silent" | "normal";
         }
     }
 
-    /**
-     * YouTube is a single-page application.
-     *
-     * Navigating from:
-     *   /watch?v=AAA
-     *
-     * to:
-     *   /watch?v=BBB
-     *
-     * does not reload the page.
-     *
-     * Watching the DOM lets us detect those transitions.
-     */
+    window.addEventListener("AUTO_SPEED_CAPTIONS", (event) => {
+        const data = (event as AutoSpeedCaptionsEvent).detail?.data;
+
+        if (!data) {
+            return;
+        }
+
+        processCaptionData(data);
+
+        // Immediately recalculate because a new caption track
+        // probably means a new video or language.
+        updateSpeed();
+    });
+
     const pageObserver = new MutationObserver(() => {
         checkForVideo();
     });
@@ -189,14 +286,9 @@ type State = "talking" | "silent" | "normal";
         childList: true,
     });
 
-    // Caption changes.
-    observeCaptions();
-
-    // Initial video.
     checkForVideo();
 
-    // Extra safety for YouTube's dynamic player replacement.
-    setInterval(checkForVideo, 1000);
+    animationFrame = requestAnimationFrame(tick);
 
     log("Initialized");
 })();

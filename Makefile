@@ -1,5 +1,5 @@
 OUT_DIR := dist
-SRC := src/content.ts
+SRC := src/content.ts src/interceptor.ts
 ZIP := youtube-auto-speed.zip
 
 .PHONY: build typecheck clean zip

@@ -8,6 +8,12 @@
     "content_scripts": [
         {
             "matches": ["https://www.youtube.com/*"],
+            "js": ["dist/interceptor.js"],
+            "run_at": "document_start",
+            "world": "MAIN"
+        },
+        {
+            "matches": ["https://www.youtube.com/*"],
             "js": ["dist/content.js"],
             "run_at": "document_idle"
         }
