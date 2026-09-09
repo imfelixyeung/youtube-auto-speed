@@ -4,5 +4,12 @@
     "description": "Automatically speeds up YouTube when nobody is speaking",
     "version": "0.0.1",
     "manifest_version": 3,
-    "action": {}
+    "action": {},
+    "content_scripts": [
+        {
+            "matches": ["https://www.youtube.com/*"],
+            "js": ["dist/content.js"],
+            "run_at": "document_idle"
+        }
+    ]
 }

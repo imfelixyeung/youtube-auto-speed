@@ -1,5 +1,5 @@
 OUT_DIR := dist
-SRC := src/background.ts
+SRC := src/content.ts
 ZIP := youtube-auto-speed.zip
 
 .PHONY: build typecheck clean zip
