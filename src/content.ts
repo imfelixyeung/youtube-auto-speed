@@ -10,14 +10,10 @@ type State = "talking" | "silent" | "normal";
     const NORMAL_SPEED = 1.0;
     const FAST_SPEED = 2.0;
 
-    const SPEED_UP_DELAY_MS = 300;
-    const SLOW_DOWN_DELAY_MS = 100;
-
     let video: HTMLVideoElement | null = null;
 
     let captionIntervals: CaptionInterval[] = [];
 
-    let speedTimer: number | null = null;
     let currentState: State = "normal";
 
     let animationFrame: number | null = null;
@@ -174,9 +170,6 @@ type State = "talking" | "silent" | "normal";
         }
 
         if (video.paused || video.ended) {
-            speedTimer && clearTimeout(speedTimer);
-            speedTimer = null;
-
             setSpeed(NORMAL_SPEED);
             currentState = "normal";
 
@@ -184,32 +177,12 @@ type State = "talking" | "silent" | "normal";
         }
 
         const talking = isTalking(video.currentTime);
-
-        speedTimer && clearTimeout(speedTimer);
-        speedTimer = null;
+        log(talking ? "talking" : "not talking");
 
         if (talking) {
-            if (currentState !== "talking") {
-                speedTimer = setTimeout(() => {
-                    setState("talking");
-                }, SLOW_DOWN_DELAY_MS);
-            }
-
-            return;
-        }
-
-        if (currentState !== "silent") {
-            speedTimer = setTimeout(() => {
-                // Check again because a caption may have appeared
-                // during the delay.
-                if (!video || video.paused || video.ended) {
-                    return;
-                }
-
-                if (!isTalking(video.currentTime)) {
-                    setState("silent");
-                }
-            }, SPEED_UP_DELAY_MS);
+            setState("talking");
+        } else {
+            setState("silent");
         }
     }
 
@@ -228,9 +201,6 @@ type State = "talking" | "silent" | "normal";
 
         video = newVideo;
 
-        speedTimer && clearTimeout(speedTimer);
-        speedTimer = null;
-
         currentState = "normal";
 
         setSpeed(NORMAL_SPEED);
@@ -239,15 +209,11 @@ type State = "talking" | "silent" | "normal";
         video.addEventListener("playing", updateSpeed);
 
         video.addEventListener("pause", () => {
-            speedTimer && clearTimeout(speedTimer);
-
             setSpeed(NORMAL_SPEED);
             currentState = "normal";
         });
 
         video.addEventListener("ended", () => {
-            speedTimer && clearTimeout(speedTimer);
-
             setSpeed(NORMAL_SPEED);
             currentState = "normal";
         });
