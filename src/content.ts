@@ -1,37 +1,35 @@
+import {
+    DEFAULT_RAMP_DURATION,
+    ENABLED_KEY,
+    MAX_RAMP_DURATION,
+    MIN_RAMP_DURATION,
+    RAMP_DURATION_KEY,
+} from "./config";
+import {
+    computeSpeedAtTime,
+    easeInOutCubic,
+    type TimedInterval,
+} from "./speedCurve";
 import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfigChangedEvent,
     TimedText,
 } from "./types";
 
-type CaptionInterval = {
-    start: number;
-    end: number;
-};
-type State =
-    | "talking"
-    | "silent"
-    | "normal"
-    | "about-to-talk"
-    | "finished-talking";
-const stateToSpeed: Record<State, number> = {
-    talking: 1.0,
-    silent: 1.5,
-    normal: 1.0,
-    "about-to-talk": 1.0,
-    "finished-talking": 1.25,
+type AutoSpeedConfig = {
+    enabled: boolean;
+    rampDurationSeconds: number;
 };
 
 (() => {
-    const STORAGE_KEY = "enabled";
+    const config: AutoSpeedConfig = {
+        enabled: true,
+        rampDurationSeconds: DEFAULT_RAMP_DURATION,
+    };
 
     let video: HTMLVideoElement | null = null;
 
-    let enabled = true;
-
-    let captionIntervals: CaptionInterval[] = [];
-
-    let currentState: State = "normal";
+    let captionIntervals: TimedInterval[] = [];
 
     function log(...args: unknown[]) {
         console.debug("[Auto Speed]", ...args);
@@ -43,18 +41,24 @@ const stateToSpeed: Record<State, number> = {
         ) as HTMLVideoElement;
     }
 
+    function roundToNearest05(value: number) {
+        return Math.round(Math.round(value / 0.05) * 0.05 * 100) / 100;
+    }
+
     function setSpeed(speed: number) {
         if (!video) {
             return;
         }
 
-        if (video.playbackRate === speed) {
+        const rounded = roundToNearest05(speed);
+
+        if (video.playbackRate === rounded) {
             return;
         }
 
-        video.playbackRate = speed;
+        video.playbackRate = rounded;
 
-        log(`Playback speed: ${speed}x`);
+        log(`Playback speed: ${rounded}x`);
     }
 
     function processCaptionData(data: TimedText | null) {
@@ -94,7 +98,6 @@ const stateToSpeed: Record<State, number> = {
             intervals.push({
                 start,
                 end,
-                text,
             });
         }
 
@@ -118,7 +121,7 @@ const stateToSpeed: Record<State, number> = {
      *
      * becoming two separate speech periods.
      */
-    function mergeIntervals(intervals: CaptionInterval[]) {
+    function mergeIntervals(intervals: TimedInterval[]) {
         if (intervals.length === 0) {
             return [];
         }
@@ -143,66 +146,29 @@ const stateToSpeed: Record<State, number> = {
         return merged;
     }
 
-    function isTalking(time: number) {
-        const intervals = captionIntervals;
-
-        if (intervals.length === 0) {
-            return false;
-        }
-
-        // Binary search would be better for huge transcripts.
-        // This version is intentionally simple.
-        for (const interval of intervals) {
-            if (time < interval.start) {
-                return false;
-            }
-
-            if (time >= interval.start && time <= interval.end) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    function setState(state: State) {
-        if (state === currentState) {
-            return;
-        }
-
-        currentState = state;
-
-        const speed = stateToSpeed[currentState];
-        setSpeed(speed);
-    }
-
     function updateSpeed() {
-        if (!enabled || !video) {
+        if (!config.enabled || !video) {
             return;
         }
 
         if (video.paused || video.ended) {
-            setState("normal");
+            setSpeed(1);
 
             return;
         }
 
-        const talking = isTalking(video.currentTime);
+        const desired = computeSpeedAtTime(
+            video.currentTime,
+            captionIntervals,
+            {
+                talkingSpeed: 1,
+                silentSpeed: 2,
+                rampDurationSeconds: config.rampDurationSeconds,
+                easing: easeInOutCubic,
+            },
+        );
 
-        if (talking) {
-            return setState("talking");
-        }
-
-        const GAP = 0.5;
-
-        if (isTalking(video.currentTime - GAP)) {
-            return setState("finished-talking");
-        }
-        if (isTalking(video.currentTime + GAP)) {
-            return setState("about-to-talk");
-        }
-
-        setState("silent");
+        setSpeed(desired);
     }
 
     function tick() {
@@ -220,17 +186,17 @@ const stateToSpeed: Record<State, number> = {
 
         video = newVideo;
 
-        setState("normal");
+        setSpeed(1);
 
         video.addEventListener("play", updateSpeed);
         video.addEventListener("playing", updateSpeed);
 
         video.addEventListener("pause", () => {
-            setState("normal");
+            setSpeed(1);
         });
 
         video.addEventListener("ended", () => {
-            setState("normal");
+            setSpeed(1);
         });
 
         video.addEventListener("seeked", updateSpeed);
@@ -249,7 +215,7 @@ const stateToSpeed: Record<State, number> = {
             "AUTO_SPEED_CONFIG_CHANGED",
             {
                 detail: {
-                    enabled,
+                    enabled: config.enabled,
                 },
             },
         );
@@ -258,29 +224,45 @@ const stateToSpeed: Record<State, number> = {
     }
 
     function setEnabled(value: boolean) {
-        if (value === enabled) {
+        if (value === config.enabled) {
             return;
         }
 
-        enabled = value;
+        config.enabled = value;
 
         propagateConfig();
 
-        if (enabled) {
+        if (config.enabled) {
             updateSpeed();
         } else {
             // Restore normal playback speed when disabled.
-            currentState = "normal";
-            setSpeed(1.0);
+            setSpeed(1);
         }
 
-        log(`Auto speed ${enabled ? "enabled" : "disabled"}`);
+        log(`Auto speed ${config.enabled ? "enabled" : "disabled"}`);
+    }
+
+    function setRampDuration(seconds: number) {
+        const clamped = Math.min(
+            MAX_RAMP_DURATION,
+            Math.max(MIN_RAMP_DURATION, seconds),
+        );
+
+        if (clamped === config.rampDurationSeconds) {
+            return;
+        }
+
+        config.rampDurationSeconds = clamped;
+
+        updateSpeed();
+
+        log(`Ramp duration: ${clamped}s`);
     }
 
     window.addEventListener("AUTO_SPEED_CAPTIONS", (event) => {
         const data = (event as AutoSpeedCaptionsEvent).detail?.data;
 
-        if (!data || !enabled) {
+        if (!data || !config.enabled) {
             return;
         }
 
@@ -304,11 +286,13 @@ const stateToSpeed: Record<State, number> = {
 
     requestAnimationFrame(tick);
 
-    chrome.storage.sync.get(STORAGE_KEY, (result) => {
-        const stored = result[STORAGE_KEY];
+    chrome.storage.sync.get([ENABLED_KEY, RAMP_DURATION_KEY], (result) => {
+        if (typeof result[ENABLED_KEY] === "boolean") {
+            setEnabled(result[ENABLED_KEY]);
+        }
 
-        if (typeof stored === "boolean") {
-            setEnabled(stored);
+        if (typeof result[RAMP_DURATION_KEY] === "number") {
+            setRampDuration(result[RAMP_DURATION_KEY]);
         }
     });
 
@@ -317,10 +301,16 @@ const stateToSpeed: Record<State, number> = {
             return;
         }
 
-        const change = changes[STORAGE_KEY];
+        const enabledChange = changes[ENABLED_KEY];
 
-        if (change && typeof change.newValue === "boolean") {
-            setEnabled(change.newValue);
+        if (enabledChange && typeof enabledChange.newValue === "boolean") {
+            setEnabled(enabledChange.newValue);
+        }
+
+        const rampChange = changes[RAMP_DURATION_KEY];
+
+        if (rampChange && typeof rampChange.newValue === "number") {
+            setRampDuration(rampChange.newValue);
         }
     });
 
