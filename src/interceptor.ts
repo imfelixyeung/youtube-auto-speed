@@ -1,5 +1,15 @@
+import type { AutoSpeedConfigChangedEvent } from "./types";
+
 (() => {
     const TIMEDTEXT_PATH = "/api/timedtext";
+
+    let enabled = true;
+
+    window.addEventListener("AUTO_SPEED_CONFIG_CHANGED", (event) => {
+        const detail = (event as AutoSpeedConfigChangedEvent).detail;
+
+        enabled = detail.enabled;
+    });
 
     function isTimedTextUrl(url: string) {
         try {
@@ -11,6 +21,10 @@
     }
 
     function sendCaptionData(url: string, text: string) {
+        if (!enabled) {
+            return;
+        }
+
         if (!text.trim()) {
             return;
         }
@@ -98,22 +112,27 @@
     const originalOpen = XMLHttpRequest.prototype.open;
     const originalSend = XMLHttpRequest.prototype.send;
 
+    type AutoSpeedXHR = XMLHttpRequest & {
+        __autoSpeedUrl?: string;
+    };
+
     XMLHttpRequest.prototype.open = function (
-        method,
-        url,
+        this: XMLHttpRequest,
+        method: string,
+        url: string | URL,
         ...rest: [boolean, string, string]
     ) {
         // Store the URL on this particular XHR instance.
-        this.__autoSpeedUrl = url;
+        (this as AutoSpeedXHR).__autoSpeedUrl = String(url);
 
         return originalOpen.call(this, method, url, ...rest);
-    };
+    } as typeof XMLHttpRequest.prototype.open;
 
-    XMLHttpRequest.prototype.send = function (...args) {
-        const xhr = this;
+    XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, ...args) {
+        const xhr = this as AutoSpeedXHR;
         const url = xhr.__autoSpeedUrl;
 
-        if (isTimedTextUrl(url)) {
+        if (typeof url === "string" && isTimedTextUrl(url)) {
             xhr.addEventListener("load", () => {
                 try {
                     if (

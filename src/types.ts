@@ -3,6 +3,10 @@ export type AutoSpeedCaptionsEvent = CustomEvent<{
     data: TimedText;
 }>;
 
+export type AutoSpeedConfigChangedEvent = CustomEvent<{
+    enabled: boolean;
+}>;
+
 export type TimedTextEventItem = {
     tStartMs: number;
     dDurationMs: number;

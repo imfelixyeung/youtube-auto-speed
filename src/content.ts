@@ -1,4 +1,8 @@
-import type { AutoSpeedCaptionsEvent, TimedText } from "./types";
+import type {
+    AutoSpeedCaptionsEvent,
+    AutoSpeedConfigChangedEvent,
+    TimedText,
+} from "./types";
 
 type CaptionInterval = {
     start: number;
@@ -12,20 +16,22 @@ type State =
     | "finished-talking";
 const stateToSpeed: Record<State, number> = {
     talking: 1.0,
-    silent: 2.0,
+    silent: 1.5,
     normal: 1.0,
     "about-to-talk": 1.0,
-    "finished-talking": 1.5,
+    "finished-talking": 1.25,
 };
 
 (() => {
+    const STORAGE_KEY = "enabled";
+
     let video: HTMLVideoElement | null = null;
+
+    let enabled = true;
 
     let captionIntervals: CaptionInterval[] = [];
 
     let currentState: State = "normal";
-
-    let animationFrame: number | null = null;
 
     function log(...args: unknown[]) {
         console.debug("[Auto Speed]", ...args);
@@ -171,7 +177,7 @@ const stateToSpeed: Record<State, number> = {
     }
 
     function updateSpeed() {
-        if (!video) {
+        if (!enabled || !video) {
             return;
         }
 
@@ -202,7 +208,7 @@ const stateToSpeed: Record<State, number> = {
     function tick() {
         updateSpeed();
 
-        animationFrame = requestAnimationFrame(tick);
+        requestAnimationFrame(tick);
     }
 
     function attachVideo(newVideo: HTMLVideoElement) {
@@ -238,10 +244,43 @@ const stateToSpeed: Record<State, number> = {
         }
     }
 
+    function propagateConfig() {
+        const event = new CustomEvent<AutoSpeedConfigChangedEvent["detail"]>(
+            "AUTO_SPEED_CONFIG_CHANGED",
+            {
+                detail: {
+                    enabled,
+                },
+            },
+        );
+
+        window.dispatchEvent(event);
+    }
+
+    function setEnabled(value: boolean) {
+        if (value === enabled) {
+            return;
+        }
+
+        enabled = value;
+
+        propagateConfig();
+
+        if (enabled) {
+            updateSpeed();
+        } else {
+            // Restore normal playback speed when disabled.
+            currentState = "normal";
+            setSpeed(1.0);
+        }
+
+        log(`Auto speed ${enabled ? "enabled" : "disabled"}`);
+    }
+
     window.addEventListener("AUTO_SPEED_CAPTIONS", (event) => {
         const data = (event as AutoSpeedCaptionsEvent).detail?.data;
 
-        if (!data) {
+        if (!data || !enabled) {
             return;
         }
 
@@ -263,7 +302,27 @@ const stateToSpeed: Record<State, number> = {
 
     checkForVideo();
 
-    animationFrame = requestAnimationFrame(tick);
+    requestAnimationFrame(tick);
+
+    chrome.storage.sync.get(STORAGE_KEY, (result) => {
+        const stored = result[STORAGE_KEY];
+
+        if (typeof stored === "boolean") {
+            setEnabled(stored);
+        }
+    });
+
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "sync") {
+            return;
+        }
+
+        const change = changes[STORAGE_KEY];
+
+        if (change && typeof change.newValue === "boolean") {
+            setEnabled(change.newValue);
+        }
+    });
 
     log("Initialized");
 })();
