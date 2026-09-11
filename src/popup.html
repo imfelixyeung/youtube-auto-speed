@@ -13,7 +13,7 @@
                 font-size: 14px;
                 margin: 0;
                 padding: 12px;
-                width: 260px;
+                width: 300px;
             }
 
             h1 {
@@ -39,7 +39,8 @@
                 margin-top: 12px;
             }
 
-            input[type="number"] {
+            input[type="number"],
+            input[type="text"] {
                 font-size: 14px;
                 padding: 4px 6px;
                 width: 64px;
@@ -113,6 +114,14 @@
                 max="30"
                 step="0.5"
             />
+        </div>
+        <div class="row">
+            <label for="talking-speed">Talking speed (x)</label>
+            <input type="text" id="talking-speed" inputmode="decimal" />
+        </div>
+        <div class="row">
+            <label for="silent-speed">Silent speed (x)</label>
+            <input type="text" id="silent-speed" inputmode="decimal" />
         </div>
         <script src="../dist/popup.js"></script>
     </body>

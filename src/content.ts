@@ -10,10 +10,18 @@ import {
 } from "chart.js";
 import {
     DEFAULT_RAMP_DURATION,
+    DEFAULT_SILENT_SPEED,
+    DEFAULT_TALKING_SPEED,
     ENABLED_KEY,
     MAX_RAMP_DURATION,
+    MAX_SILENT_SPEED,
+    MAX_TALKING_SPEED,
     MIN_RAMP_DURATION,
+    MIN_SILENT_SPEED,
+    MIN_TALKING_SPEED,
     RAMP_DURATION_KEY,
+    SILENT_SPEED_KEY,
+    TALKING_SPEED_KEY,
 } from "./config";
 import { createPlayheadPlugin } from "./playheadPlugin";
 import {
@@ -31,12 +39,16 @@ import type {
 type AutoSpeedConfig = {
     enabled: boolean;
     rampDurationSeconds: number;
+    talkingSpeed: number;
+    silentSpeed: number;
 };
 
 (() => {
     const config: AutoSpeedConfig = {
         enabled: true,
         rampDurationSeconds: DEFAULT_RAMP_DURATION,
+        talkingSpeed: DEFAULT_TALKING_SPEED,
+        silentSpeed: DEFAULT_SILENT_SPEED,
     };
 
     let video: HTMLVideoElement | null = null;
@@ -328,8 +340,8 @@ type AutoSpeedConfig = {
         const points = sampleSpeedCurve(
             captionIntervals,
             {
-                talkingSpeed: 1,
-                silentSpeed: 2,
+                talkingSpeed: config.talkingSpeed,
+                silentSpeed: config.silentSpeed,
                 rampDurationSeconds: config.rampDurationSeconds,
                 easing: easeInOutCubic,
             },
@@ -340,6 +352,16 @@ type AutoSpeedConfig = {
         chart.data.labels = points.map((point) => point.time.toFixed(2));
 
         dataset.data = points.map((point) => point.speed);
+
+        const yScale = chart.options.scales?.y as
+            | { min?: number; max?: number }
+            | undefined;
+
+        if (yScale) {
+            yScale.min = config.talkingSpeed;
+
+            yScale.max = config.silentSpeed;
+        }
 
         chart.update("none");
 
@@ -446,8 +468,8 @@ type AutoSpeedConfig = {
             video.currentTime,
             captionIntervals,
             {
-                talkingSpeed: 1,
-                silentSpeed: 2,
+                talkingSpeed: config.talkingSpeed,
+                silentSpeed: config.silentSpeed,
                 rampDurationSeconds: config.rampDurationSeconds,
                 easing: easeInOutCubic,
             },
@@ -577,6 +599,46 @@ type AutoSpeedConfig = {
         log(`Ramp duration: ${clamped}s`);
     }
 
+    function setTalkingSpeed(speed: number) {
+        const clamped = Math.min(
+            MAX_TALKING_SPEED,
+            Math.max(MIN_TALKING_SPEED, speed),
+        );
+
+        if (clamped >= config.silentSpeed) {
+            return;
+        }
+
+        if (clamped === config.talkingSpeed) {
+            return;
+        }
+
+        config.talkingSpeed = clamped;
+        updateSpeed();
+        updateChart();
+        log(`Talking speed: ${clamped}x`);
+    }
+
+    function setSilentSpeed(speed: number) {
+        const clamped = Math.min(
+            MAX_SILENT_SPEED,
+            Math.max(MIN_SILENT_SPEED, speed),
+        );
+
+        if (clamped <= config.talkingSpeed) {
+            return;
+        }
+
+        if (clamped === config.silentSpeed) {
+            return;
+        }
+
+        config.silentSpeed = clamped;
+        updateSpeed();
+        updateChart();
+        log(`Silent speed: ${clamped}x`);
+    }
+
     window.addEventListener("AUTO_SPEED_CAPTIONS", (event) => {
         const data = (event as AutoSpeedCaptionsEvent).detail?.data;
 
@@ -606,15 +668,26 @@ type AutoSpeedConfig = {
 
     requestAnimationFrame(tick);
 
-    chrome.storage.sync.get([ENABLED_KEY, RAMP_DURATION_KEY], (result) => {
-        if (typeof result[ENABLED_KEY] === "boolean") {
-            setEnabled(result[ENABLED_KEY]);
-        }
+    chrome.storage.sync.get(
+        [ENABLED_KEY, RAMP_DURATION_KEY, TALKING_SPEED_KEY, SILENT_SPEED_KEY],
+        (result) => {
+            if (typeof result[ENABLED_KEY] === "boolean") {
+                setEnabled(result[ENABLED_KEY]);
+            }
 
-        if (typeof result[RAMP_DURATION_KEY] === "number") {
-            setRampDuration(result[RAMP_DURATION_KEY]);
-        }
-    });
+            if (typeof result[RAMP_DURATION_KEY] === "number") {
+                setRampDuration(result[RAMP_DURATION_KEY]);
+            }
+
+            if (typeof result[TALKING_SPEED_KEY] === "number") {
+                setTalkingSpeed(result[TALKING_SPEED_KEY]);
+            }
+
+            if (typeof result[SILENT_SPEED_KEY] === "number") {
+                setSilentSpeed(result[SILENT_SPEED_KEY]);
+            }
+        },
+    );
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName !== "sync") {
@@ -631,6 +704,18 @@ type AutoSpeedConfig = {
 
         if (rampChange && typeof rampChange.newValue === "number") {
             setRampDuration(rampChange.newValue);
+        }
+
+        const talkingChange = changes[TALKING_SPEED_KEY];
+
+        if (talkingChange && typeof talkingChange.newValue === "number") {
+            setTalkingSpeed(talkingChange.newValue);
+        }
+
+        const silentChange = changes[SILENT_SPEED_KEY];
+
+        if (silentChange && typeof silentChange.newValue === "number") {
+            setSilentSpeed(silentChange.newValue);
         }
     });
 
