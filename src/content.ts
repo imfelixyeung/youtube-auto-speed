@@ -28,6 +28,7 @@ import {
     computeSpeedAtTime,
     easeInOutCubic,
     sampleSpeedCurve,
+    type SpeedPoint,
     type TimedInterval,
 } from "./speedCurve";
 import type {
@@ -54,6 +55,8 @@ type AutoSpeedConfig = {
     let video: HTMLVideoElement | null = null;
 
     let captionIntervals: TimedInterval[] = [];
+
+    let captionVersion = 0;
 
     let badge: HTMLElement | null = null;
 
@@ -114,6 +117,14 @@ type AutoSpeedConfig = {
     };
 
     let lastPlayheadRender = 0;
+
+    let overlayHovered = false;
+
+    let ticking = false;
+
+    let cachedChartKey = "";
+
+    let cachedChartPoints: SpeedPoint[] = [];
 
     const playheadLinePlugin = createPlayheadPlugin(() => playhead);
 
@@ -297,6 +308,14 @@ type AutoSpeedConfig = {
 
             chart = createChart(canvas);
 
+            overlay.addEventListener("mouseenter", () => {
+                overlayHovered = true;
+            });
+
+            overlay.addEventListener("mouseleave", () => {
+                overlayHovered = false;
+            });
+
             log("Chart created");
         }
 
@@ -328,6 +347,10 @@ type AutoSpeedConfig = {
         playhead.time = video.currentTime;
 
         if (captionIntervals.length === 0 || duration <= 0) {
+            cachedChartKey = "";
+
+            cachedChartPoints = [];
+
             chart.data.labels = [];
 
             dataset.data = [];
@@ -337,21 +360,40 @@ type AutoSpeedConfig = {
             return;
         }
 
-        const points = sampleSpeedCurve(
-            captionIntervals,
-            {
-                talkingSpeed: config.talkingSpeed,
-                silentSpeed: config.silentSpeed,
-                rampDurationSeconds: config.rampDurationSeconds,
-                easing: easeInOutCubic,
-            },
-            duration,
-            duration / MAX_CHART_SAMPLES,
+        // Only resample when captions, duration, or speed config actually
+        // change. The interval array is reassigned (new reference) whenever
+        // captions arrive, so `captionVersion` is a cheap correctness guard.
+        const cacheKey = [
+            captionVersion,
+            duration.toFixed(3),
+            config.talkingSpeed,
+            config.silentSpeed,
+            config.rampDurationSeconds,
+        ].join("|");
+
+        if (cacheKey !== cachedChartKey) {
+            cachedChartPoints = sampleSpeedCurve(
+                captionIntervals,
+                {
+                    talkingSpeed: config.talkingSpeed,
+                    silentSpeed: config.silentSpeed,
+                    rampDurationSeconds: config.rampDurationSeconds,
+                    easing: easeInOutCubic,
+                },
+                duration,
+                duration / MAX_CHART_SAMPLES,
+            );
+
+            cachedChartKey = cacheKey;
+
+            log(`Chart resampled with ${cachedChartPoints.length} samples`);
+        }
+
+        chart.data.labels = cachedChartPoints.map((point) =>
+            point.time.toFixed(2),
         );
 
-        chart.data.labels = points.map((point) => point.time.toFixed(2));
-
-        dataset.data = points.map((point) => point.speed);
+        dataset.data = cachedChartPoints.map((point) => point.speed);
 
         const yScale = chart.options.scales?.y as
             | { min?: number; max?: number }
@@ -364,8 +406,6 @@ type AutoSpeedConfig = {
         }
 
         chart.update("none");
-
-        log(`Chart updated with ${points.length} samples`);
     }
 
     function processCaptionData(data: TimedText | null) {
@@ -412,6 +452,8 @@ type AutoSpeedConfig = {
         intervals.sort((a, b) => a.start - b.start);
 
         captionIntervals = mergeIntervals(intervals);
+
+        captionVersion++;
 
         log(`Loaded ${captionIntervals.length} caption intervals`);
 
@@ -483,13 +525,13 @@ type AutoSpeedConfig = {
             return;
         }
 
-        const now = performance.now();
-
-        if (now - lastPlayheadRender < 100) {
+        if (!overlayHovered) {
             return;
         }
 
-        if (getComputedStyle(overlay).opacity === "0") {
+        const now = performance.now();
+
+        if (now - lastPlayheadRender < 100) {
             return;
         }
 
@@ -506,7 +548,23 @@ type AutoSpeedConfig = {
         updateSpeed();
         refreshPlayhead();
 
-        requestAnimationFrame(tick);
+        if (video && !video.paused && !video.ended && config.enabled) {
+            requestAnimationFrame(tick);
+        } else {
+            ticking = false;
+        }
+    }
+
+    function requestTick() {
+        if (!video || video.paused || video.ended || !config.enabled) {
+            return;
+        }
+
+        if (!ticking) {
+            ticking = true;
+
+            requestAnimationFrame(tick);
+        }
     }
 
     function attachVideo(newVideo: HTMLVideoElement) {
@@ -520,8 +578,15 @@ type AutoSpeedConfig = {
 
         setSpeed(1);
 
-        video.addEventListener("play", updateSpeed);
-        video.addEventListener("playing", updateSpeed);
+        video.addEventListener("play", () => {
+            updateSpeed();
+            requestTick();
+        });
+
+        video.addEventListener("playing", () => {
+            updateSpeed();
+            requestTick();
+        });
 
         video.addEventListener("pause", () => {
             setSpeed(1);
@@ -570,6 +635,7 @@ type AutoSpeedConfig = {
 
         if (config.enabled) {
             updateSpeed();
+            requestTick();
         } else {
             // Restore normal playback speed when disabled.
             setSpeed(1);
@@ -666,7 +732,7 @@ type AutoSpeedConfig = {
 
     checkForVideo();
 
-    requestAnimationFrame(tick);
+    requestTick();
 
     chrome.storage.sync.get(
         [ENABLED_KEY, RAMP_DURATION_KEY, TALKING_SPEED_KEY, SILENT_SPEED_KEY],
