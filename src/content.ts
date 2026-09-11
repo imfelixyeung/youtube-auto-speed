@@ -148,7 +148,7 @@ type AutoSpeedConfig = {
                     top: 0;
                     left: 0;
                     right: 0;
-                    height: 5rem;
+                    height: 3.75rem;
                     z-index: 2147483647;
                     pointer-events: none;
                 }
@@ -159,9 +159,9 @@ type AutoSpeedConfig = {
                     right: 0;
                     padding-left: 1rem;
                     padding-right: 1rem;
-                    height: 2.5rem;
+                    height: 1.75rem;
                     border-radius: 0 0 0 1.25rem;
-                    background: rgba(0, 0, 0, 0.7);
+                    background-color: rgba(0, 0, 0, 0.5);
                     color: #fff;
                     font-family: "Roboto", "Arial", sans-serif;
                     font-size: 1rem;
@@ -171,6 +171,7 @@ type AutoSpeedConfig = {
                     user-select: none;
                     display: grid;
                     place-items: center;
+                    transition: background-color 0.15s ease;
                 }
 
                 .auto-speed-chart {
@@ -180,12 +181,15 @@ type AutoSpeedConfig = {
                     height: 100%;
                     opacity: 0;
                     transition: opacity 0.15s ease;
-                    border-top: 2.5rem solid rgba(0, 0, 0, 0.75);
+                    border-top: 1.75rem solid rgba(0, 0, 0, 0.5);
                 }
 
                 .auto-speed-overlay:hover {
                     .auto-speed-chart {
                         opacity: 1;
+                    }
+                    .auto-speed-badge {
+                        background-color: transparent;
                     }
                 }
             }
@@ -243,7 +247,7 @@ type AutoSpeedConfig = {
 
                                 fillGradient.addColorStop(
                                     0,
-                                    "rgba(0, 0, 0, 0.75)",
+                                    "rgba(0, 0, 0, 0.5)",
                                 );
 
                                 fillGradient.addColorStop(
