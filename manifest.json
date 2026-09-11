@@ -5,7 +5,7 @@
     "version": "0.0.1",
     "manifest_version": 3,
     "action": {
-        "default_popup": "src/popup.html",
+        "default_popup": "dist/popup.html",
         "default_title": "YouTube Auto Speed"
     },
     "content_scripts": [
