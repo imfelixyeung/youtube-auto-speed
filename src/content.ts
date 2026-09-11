@@ -1,4 +1,12 @@
 import {
+    CategoryScale,
+    Chart,
+    LinearScale,
+    LineController,
+    LineElement,
+    PointElement,
+} from "chart.js";
+import {
     DEFAULT_RAMP_DURATION,
     ENABLED_KEY,
     MAX_RAMP_DURATION,
@@ -8,6 +16,7 @@ import {
 import {
     computeSpeedAtTime,
     easeInOutCubic,
+    sampleSpeedCurve,
     type TimedInterval,
 } from "./speedCurve";
 import type {
@@ -32,6 +41,10 @@ type AutoSpeedConfig = {
     let captionIntervals: TimedInterval[] = [];
 
     let badge: HTMLElement | null = null;
+
+    let overlay: HTMLElement | null = null;
+
+    let chart: Chart | null = null;
 
     function log(...args: unknown[]) {
         console.debug("[Auto Speed]", ...args);
@@ -67,58 +80,225 @@ type AutoSpeedConfig = {
         log(`Playback speed: ${rounded}x`);
     }
 
+    Chart.register(
+        LineController,
+        LineElement,
+        PointElement,
+        LinearScale,
+        CategoryScale,
+    );
+
+    const SPEED_CURVE_STYLE_ID = "auto-speed-overlay-styles";
+
+    const MAX_CHART_SAMPLES = 4000;
+
+    function ensureOverlayStyles() {
+        if (document.getElementById(SPEED_CURVE_STYLE_ID)) {
+            return;
+        }
+
+        const style = document.createElement("style");
+
+        style.id = SPEED_CURVE_STYLE_ID;
+
+        style.textContent = `
+            #movie_player {
+                .auto-speed-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 8rem;
+                    z-index: 2147483647;
+                    pointer-events: none;
+                }
+
+                .auto-speed-badge {
+                    position: absolute;
+                    top: 0.5rem;
+                    right: 0.5rem;
+                    padding: 0.5rem 1rem;
+                    border-radius: 16rem;
+                    background: rgba(0, 0, 0, 0.7);
+                    color: #fff;
+                    font-family: "Roboto", "Arial", sans-serif;
+                    font-size: 1rem;
+                    font-weight: 500;
+                    line-height: normal;
+                    pointer-events: auto;
+                    user-select: none;
+                }
+
+                .auto-speed-chart {
+                    position: absolute;
+                    inset: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0;
+                    transition: opacity 0.15s ease;
+                }
+
+                .auto-speed-overlay:hover {
+                    .auto-speed-chart {
+                        opacity: 1;
+                    }
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
     function createBadge(): HTMLElement {
         const badgeEl = document.createElement("div");
+
+        badgeEl.className = "auto-speed-badge";
 
         badgeEl.setAttribute("data-auto-speed-badge", "");
 
         badgeEl.textContent = "1.00x";
 
-        const style = badgeEl.style;
-
-        style.position = "absolute";
-        style.top = "0.5rem";
-        style.right = "0.5rem";
-        style.zIndex = "2147483647";
-        style.padding = "0.5rem 1rem";
-        style.borderRadius = "16rem";
-        style.background = "rgba(0, 0, 0, 0.7)";
-        style.color = "#fff";
-        style.fontFamily = "'Roboto', 'Arial', sans-serif";
-        style.fontSize = "1rem";
-        style.fontWeight = "500";
-        style.lineHeight = "normal";
-        style.pointerEvents = "none";
-        style.userSelect = "none";
-        style.display = "none";
-
         return badgeEl;
     }
 
+    function createChart(canvas: HTMLCanvasElement): Chart {
+        const chart = new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        data: [],
+                        borderColor: "rgba(255, 255, 255, 0.9)",
+                        borderWidth: 2,
+                        pointRadius: 0,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                events: [],
+                layout: {
+                    padding: 0,
+                },
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                    tooltip: {
+                        enabled: false,
+                    },
+                },
+                scales: {
+                    x: {
+                        display: false,
+                    },
+                    y: {
+                        display: false,
+                        suggestedMin: 0,
+                        suggestedMax: 2.5,
+                    },
+                },
+            },
+        });
+
+        return chart;
+    }
+
     /**
-     * Attach the badge to YouTube's player container.
+     * Attach a badge + chart overlay to YouTube's player container.
      *
-     * The player (`#movie_player`) is the element that goes fullscreen, so a
-     * badge appended to it stays pinned to the video in all display modes.
+     * The player (`#movie_player`) is the element that goes fullscreen, so an
+     * overlay appended to it stays pinned to the video in all display modes.
      */
-    function attachBadge() {
+    function attachOverlay() {
         const player = document.querySelector<HTMLElement>("#movie_player");
 
         if (!player) {
             return;
         }
 
-        if (!badge) {
+        ensureOverlayStyles();
+
+        if (!overlay) {
+            const canvas = document.createElement("canvas");
+
+            canvas.className = "auto-speed-chart";
+
+            canvas.setAttribute("data-auto-speed-chart", "");
+
+            overlay = document.createElement("div");
+
+            overlay.className = "auto-speed-overlay";
+
+            overlay.setAttribute("data-auto-speed-overlay", "");
+
+            overlay.appendChild(canvas);
+
             badge = createBadge();
+
+            overlay.appendChild(badge);
+
+            chart = createChart(canvas);
+
+            log("Chart created");
         }
 
-        if (badge.parentElement !== player) {
-            badge.remove();
+        if (overlay.parentElement !== player) {
+            overlay.remove();
 
-            player.appendChild(badge);
+            player.appendChild(overlay);
         }
 
-        badge.style.display = config.enabled ? "block" : "none";
+        overlay.style.display = config.enabled ? "block" : "none";
+
+        updateChart();
+    }
+
+    function updateChart() {
+        if (!chart || !video) {
+            return;
+        }
+
+        const dataset = chart.data.datasets[0];
+
+        if (!dataset) {
+            return;
+        }
+
+        const duration = Number.isFinite(video.duration) ? video.duration : 0;
+
+        if (captionIntervals.length === 0 || duration <= 0) {
+            chart.data.labels = [];
+
+            dataset.data = [];
+
+            chart.update("none");
+
+            return;
+        }
+
+        const points = sampleSpeedCurve(
+            captionIntervals,
+            {
+                talkingSpeed: 1,
+                silentSpeed: 2,
+                rampDurationSeconds: config.rampDurationSeconds,
+                easing: easeInOutCubic,
+            },
+            duration,
+            duration / MAX_CHART_SAMPLES,
+        );
+
+        chart.data.labels = points.map((point) => point.time.toFixed(2));
+
+        dataset.data = points.map((point) => point.speed);
+
+        chart.update("none");
+
+        log(`Chart updated with ${points.length} samples`);
     }
 
     function processCaptionData(data: TimedText | null) {
@@ -260,6 +440,8 @@ type AutoSpeedConfig = {
         });
 
         video.addEventListener("seeked", updateSpeed);
+        video.addEventListener("loadedmetadata", updateChart);
+        video.addEventListener("durationchange", updateChart);
     }
 
     function checkForVideo() {
@@ -269,7 +451,7 @@ type AutoSpeedConfig = {
             attachVideo(newVideo);
         }
 
-        attachBadge();
+        attachOverlay();
     }
 
     function propagateConfig() {
@@ -301,7 +483,7 @@ type AutoSpeedConfig = {
             setSpeed(1);
         }
 
-        attachBadge();
+        attachOverlay();
 
         log(`Auto speed ${config.enabled ? "enabled" : "disabled"}`);
     }
@@ -320,6 +502,8 @@ type AutoSpeedConfig = {
 
         updateSpeed();
 
+        updateChart();
+
         log(`Ramp duration: ${clamped}s`);
     }
 
@@ -335,6 +519,8 @@ type AutoSpeedConfig = {
         // Immediately recalculate because a new caption track
         // probably means a new video or language.
         updateSpeed();
+
+        updateChart();
     });
 
     const pageObserver = new MutationObserver(() => {
