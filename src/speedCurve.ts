@@ -43,6 +43,10 @@ export function findSpeechNeighbors(
     time: number,
     intervals: TimedInterval[],
 ): SpeechNeighbors {
+    if (intervals.length === 0) {
+        return { talking: false, previousEnd: -Infinity, nextStart: Infinity };
+    }
+
     // Binary search for the last interval whose start time is <= `time`.
     let low = 0;
     let high = intervals.length - 1;
@@ -50,9 +54,9 @@ export function findSpeechNeighbors(
 
     while (low <= high) {
         const mid = (low + high) >> 1;
-        const interval = intervals[mid]!;
+        const start = intervals[mid]?.start;
 
-        if (interval.start <= time) {
+        if (start !== undefined && start <= time) {
             found = mid;
             low = mid + 1;
         } else {
@@ -62,37 +66,37 @@ export function findSpeechNeighbors(
 
     // `time` is before the first interval.
     if (found === -1) {
-        const first = intervals[0];
-
-        if (!first) {
-            return {
-                talking: false,
-                previousEnd: -Infinity,
-                nextStart: Infinity,
-            };
-        }
-
         return {
             talking: false,
             previousEnd: -Infinity,
-            nextStart: first.start,
+            nextStart: intervals[0]?.start ?? Infinity,
         };
     }
 
-    const current = intervals[found]!;
+    const current = intervals[found];
 
-    const previousEnd = found > 0 ? intervals[found - 1]!.end : -Infinity;
+    if (!current) {
+        return {
+            talking: false,
+            previousEnd: -Infinity,
+            nextStart: Infinity,
+        };
+    }
+
+    const previousEnd =
+        found > 0 ? (intervals[found - 1]?.end ?? -Infinity) : -Infinity;
 
     if (time <= current.end) {
         return { talking: true, previousEnd, nextStart: current.start };
     }
 
-    const next = found + 1 < intervals.length ? intervals[found + 1] : null;
-
     return {
         talking: false,
         previousEnd: current.end,
-        nextStart: next ? next.start : Infinity,
+        nextStart:
+            found + 1 < intervals.length
+                ? (intervals[found + 1]?.start ?? Infinity)
+                : Infinity,
     };
 }
 

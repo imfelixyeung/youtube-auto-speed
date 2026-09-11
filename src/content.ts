@@ -27,8 +27,8 @@ import { createPlayheadPlugin } from "./playheadPlugin";
 import {
     computeSpeedAtTime,
     easeInOutCubic,
-    sampleSpeedCurve,
     type SpeedPoint,
+    sampleSpeedCurve,
     type TimedInterval,
 } from "./speedCurve";
 import type {
@@ -75,7 +75,7 @@ type AutoSpeedConfig = {
     }
 
     function roundToNearest05(value: number) {
-        return Math.round(Math.round(value / 0.05) * 0.05 * 100) / 100;
+        return Math.round(value / 0.05) * 0.05;
     }
 
     function setSpeed(speed: number) {
@@ -110,6 +110,10 @@ type AutoSpeedConfig = {
     const SPEED_CURVE_STYLE_ID = "auto-speed-overlay-styles";
 
     const MAX_CHART_SAMPLES = 4000;
+
+    let fillGradient: CanvasGradient | null = null;
+
+    let fillGradientArea = { top: 0, bottom: 0 };
 
     const playhead = {
         time: 0,
@@ -223,17 +227,37 @@ type AutoSpeedConfig = {
                                 return "transparent";
                             }
 
-                            const gradient = chart.ctx.createLinearGradient(
-                                0,
-                                area.top,
-                                0,
-                                area.bottom,
-                            );
+                            // Reuse the gradient across renders; recreate it
+                            // only when the chart area actually resized.
+                            if (
+                                !fillGradient ||
+                                fillGradientArea.top !== area.top ||
+                                fillGradientArea.bottom !== area.bottom
+                            ) {
+                                fillGradient = chart.ctx.createLinearGradient(
+                                    0,
+                                    area.top,
+                                    0,
+                                    area.bottom,
+                                );
 
-                            gradient.addColorStop(0, "rgba(0, 0, 0, 0.75)");
-                            gradient.addColorStop(1, "rgba(0, 0, 0, 0.25)");
+                                fillGradient.addColorStop(
+                                    0,
+                                    "rgba(0, 0, 0, 0.75)",
+                                );
 
-                            return gradient;
+                                fillGradient.addColorStop(
+                                    1,
+                                    "rgba(0, 0, 0, 0.25)",
+                                );
+
+                                fillGradientArea = {
+                                    top: area.top,
+                                    bottom: area.bottom,
+                                };
+                            }
+
+                            return fillGradient;
                         },
                     },
                 ],
@@ -438,12 +462,9 @@ type AutoSpeedConfig = {
             const end = (event.tStartMs + event.dDurationMs) / 1000;
 
             // Ignore empty caption events.
-            const text = event.segs
-                .map((seg) => seg.utf8 || "")
-                .join("")
-                .trim();
+            const hasText = event.segs.some((seg) => seg.utf8?.trim());
 
-            if (!text) {
+            if (!hasText) {
                 continue;
             }
 
