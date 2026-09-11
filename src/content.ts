@@ -1,6 +1,7 @@
 import {
     CategoryScale,
     Chart,
+    Filler,
     LinearScale,
     LineController,
     LineElement,
@@ -86,6 +87,7 @@ type AutoSpeedConfig = {
         PointElement,
         LinearScale,
         CategoryScale,
+        Filler,
     );
 
     const SPEED_CURVE_STYLE_ID = "auto-speed-overlay-styles";
@@ -108,7 +110,7 @@ type AutoSpeedConfig = {
                     top: 0;
                     left: 0;
                     right: 0;
-                    height: 8rem;
+                    height: 5rem;
                     z-index: 2147483647;
                     pointer-events: none;
                 }
@@ -136,6 +138,7 @@ type AutoSpeedConfig = {
                     height: 100%;
                     opacity: 0;
                     transition: opacity 0.15s ease;
+                    border-top: 2.5rem solid rgba(0, 0, 0, 0.75);
                 }
 
                 .auto-speed-overlay:hover {
@@ -172,6 +175,28 @@ type AutoSpeedConfig = {
                         borderColor: "rgba(255, 255, 255, 0.9)",
                         borderWidth: 2,
                         pointRadius: 0,
+                        fill: true,
+                        backgroundColor: (ctx) => {
+                            const { chart } = ctx;
+
+                            const area = chart.chartArea;
+
+                            if (!area) {
+                                return "transparent";
+                            }
+
+                            const gradient = chart.ctx.createLinearGradient(
+                                0,
+                                area.top,
+                                0,
+                                area.bottom,
+                            );
+
+                            gradient.addColorStop(0, "rgba(0, 0, 0, 0.75)");
+                            gradient.addColorStop(1, "rgba(0, 0, 0, 0.25)");
+
+                            return gradient;
+                        },
                     },
                 ],
             },
@@ -197,8 +222,9 @@ type AutoSpeedConfig = {
                     },
                     y: {
                         display: false,
-                        suggestedMin: 0,
-                        suggestedMax: 2.5,
+                        min: 1,
+                        max: 2,
+                        reverse: true,
                     },
                 },
             },
