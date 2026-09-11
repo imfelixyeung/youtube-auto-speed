@@ -31,6 +31,8 @@ type AutoSpeedConfig = {
 
     let captionIntervals: TimedInterval[] = [];
 
+    let badge: HTMLElement | null = null;
+
     function log(...args: unknown[]) {
         console.debug("[Auto Speed]", ...args);
     }
@@ -58,7 +60,65 @@ type AutoSpeedConfig = {
 
         video.playbackRate = rounded;
 
+        if (badge) {
+            badge.textContent = `${rounded.toFixed(2)}x`;
+        }
+
         log(`Playback speed: ${rounded}x`);
+    }
+
+    function createBadge(): HTMLElement {
+        const badgeEl = document.createElement("div");
+
+        badgeEl.setAttribute("data-auto-speed-badge", "");
+
+        badgeEl.textContent = "1.00x";
+
+        const style = badgeEl.style;
+
+        style.position = "absolute";
+        style.top = "0.5rem";
+        style.right = "0.5rem";
+        style.zIndex = "2147483647";
+        style.padding = "0.5rem 1rem";
+        style.borderRadius = "16rem";
+        style.background = "rgba(0, 0, 0, 0.7)";
+        style.color = "#fff";
+        style.fontFamily = "'Roboto', 'Arial', sans-serif";
+        style.fontSize = "1rem";
+        style.fontWeight = "500";
+        style.lineHeight = "normal";
+        style.pointerEvents = "none";
+        style.userSelect = "none";
+        style.display = "none";
+
+        return badgeEl;
+    }
+
+    /**
+     * Attach the badge to YouTube's player container.
+     *
+     * The player (`#movie_player`) is the element that goes fullscreen, so a
+     * badge appended to it stays pinned to the video in all display modes.
+     */
+    function attachBadge() {
+        const player = document.querySelector<HTMLElement>("#movie_player");
+
+        if (!player) {
+            return;
+        }
+
+        if (!badge) {
+            badge = createBadge();
+        }
+
+        if (badge.parentElement !== player) {
+            badge.remove();
+
+            player.appendChild(badge);
+        }
+
+        badge.style.display = config.enabled ? "block" : "none";
     }
 
     function processCaptionData(data: TimedText | null) {
@@ -208,6 +268,8 @@ type AutoSpeedConfig = {
         if (newVideo && newVideo !== video) {
             attachVideo(newVideo);
         }
+
+        attachBadge();
     }
 
     function propagateConfig() {
@@ -238,6 +300,8 @@ type AutoSpeedConfig = {
             // Restore normal playback speed when disabled.
             setSpeed(1);
         }
+
+        attachBadge();
 
         log(`Auto speed ${config.enabled ? "enabled" : "disabled"}`);
     }
