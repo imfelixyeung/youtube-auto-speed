@@ -5,7 +5,7 @@ ZIP := youtube-auto-speed.zip
 .PHONY: build typecheck clean zip
 
 build:
-	bun build $(SRC) --outdir=$(OUT_DIR) --target=browser
+	bun build $(SRC) --outdir=$(OUT_DIR) --target=browser --minify --sourcemap=linked
 
 typecheck:
 	bunx tsc --noEmit
