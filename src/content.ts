@@ -23,6 +23,7 @@ import {
     SILENT_SPEED_KEY,
     TALKING_SPEED_KEY,
 } from "./config";
+import "./content.css";
 import { createPlayheadPlugin } from "./playheadPlugin";
 import {
     computeSpeedAtTime,
@@ -107,8 +108,6 @@ type AutoSpeedConfig = {
         Filler,
     );
 
-    const SPEED_CURVE_STYLE_ID = "auto-speed-overlay-styles";
-
     const MAX_CHART_SAMPLES = 4000;
 
     let fillGradient: CanvasGradient | null = null;
@@ -131,72 +130,6 @@ type AutoSpeedConfig = {
     let cachedChartPoints: SpeedPoint[] = [];
 
     const playheadLinePlugin = createPlayheadPlugin(() => playhead);
-
-    function ensureOverlayStyles() {
-        if (document.getElementById(SPEED_CURVE_STYLE_ID)) {
-            return;
-        }
-
-        const style = document.createElement("style");
-
-        style.id = SPEED_CURVE_STYLE_ID;
-
-        style.textContent = `
-            #movie_player {
-                .auto-speed-overlay {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 3.75rem;
-                    z-index: 2147483647;
-                    pointer-events: none;
-                }
-
-                .auto-speed-badge {
-                    position: absolute;
-                    top: 0;
-                    right: 0;
-                    padding-left: 1rem;
-                    padding-right: 1rem;
-                    height: 1.75rem;
-                    border-radius: 0 0 0 1.25rem;
-                    background-color: rgba(0, 0, 0, 0.5);
-                    color: #fff;
-                    font-family: "Roboto", "Arial", sans-serif;
-                    font-size: 1rem;
-                    font-weight: 500;
-                    line-height: normal;
-                    pointer-events: auto;
-                    user-select: none;
-                    display: grid;
-                    place-items: center;
-                    transition: background-color 0.15s ease;
-                }
-
-                .auto-speed-chart {
-                    position: absolute;
-                    inset: 0;
-                    width: 100%;
-                    height: 100%;
-                    opacity: 0;
-                    transition: opacity 0.15s ease;
-                    border-top: 1.75rem solid rgba(0, 0, 0, 0.5);
-                }
-
-                .auto-speed-overlay:hover {
-                    .auto-speed-chart {
-                        opacity: 1;
-                    }
-                    .auto-speed-badge {
-                        background-color: transparent;
-                    }
-                }
-            }
-        `;
-
-        document.head.appendChild(style);
-    }
 
     function createBadge(): HTMLElement {
         const badgeEl = document.createElement("div");
@@ -312,8 +245,6 @@ type AutoSpeedConfig = {
         if (!player) {
             return;
         }
-
-        ensureOverlayStyles();
 
         if (!overlay) {
             const canvas = document.createElement("canvas");
