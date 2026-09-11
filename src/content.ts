@@ -117,10 +117,12 @@ type AutoSpeedConfig = {
 
                 .auto-speed-badge {
                     position: absolute;
-                    top: 0.5rem;
-                    right: 0.5rem;
-                    padding: 0.5rem 1rem;
-                    border-radius: 16rem;
+                    top: 0;
+                    right: 0;
+                    padding-left: 1rem;
+                    padding-right: 1rem;
+                    height: 2.5rem;
+                    border-radius: 0 0 0 1.25rem;
                     background: rgba(0, 0, 0, 0.7);
                     color: #fff;
                     font-family: "Roboto", "Arial", sans-serif;
@@ -129,6 +131,8 @@ type AutoSpeedConfig = {
                     line-height: normal;
                     pointer-events: auto;
                     user-select: none;
+                    display: grid;
+                    place-items: center;
                 }
 
                 .auto-speed-chart {
