@@ -26,7 +26,7 @@ export function createPlayheadPlugin(getState: () => PlayheadState): Plugin {
             ctx.moveTo(x, area.top);
             ctx.lineTo(x, area.bottom);
             ctx.strokeStyle = "rgba(255, 0, 0, 0.9)";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             ctx.stroke();
             ctx.restore();
         },

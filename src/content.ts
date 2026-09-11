@@ -188,7 +188,7 @@ type AutoSpeedConfig = {
                     {
                         data: [],
                         borderColor: "rgba(255, 255, 255, 0.9)",
-                        borderWidth: 2,
+                        borderWidth: 1,
                         pointRadius: 0,
                         fill: true,
                         backgroundColor: (ctx: ScriptableContext<"line">) => {
