@@ -6,6 +6,7 @@ import {
     LineController,
     LineElement,
     PointElement,
+    type ScriptableContext,
 } from "chart.js";
 import {
     DEFAULT_RAMP_DURATION,
@@ -14,6 +15,7 @@ import {
     MIN_RAMP_DURATION,
     RAMP_DURATION_KEY,
 } from "./config";
+import { createPlayheadPlugin } from "./playheadPlugin";
 import {
     computeSpeedAtTime,
     easeInOutCubic,
@@ -93,6 +95,15 @@ type AutoSpeedConfig = {
     const SPEED_CURVE_STYLE_ID = "auto-speed-overlay-styles";
 
     const MAX_CHART_SAMPLES = 4000;
+
+    const playhead = {
+        time: 0,
+        duration: 0,
+    };
+
+    let lastPlayheadRender = 0;
+
+    const playheadLinePlugin = createPlayheadPlugin(() => playhead);
 
     function ensureOverlayStyles() {
         if (document.getElementById(SPEED_CURVE_STYLE_ID)) {
@@ -180,7 +191,7 @@ type AutoSpeedConfig = {
                         borderWidth: 2,
                         pointRadius: 0,
                         fill: true,
-                        backgroundColor: (ctx) => {
+                        backgroundColor: (ctx: ScriptableContext<"line">) => {
                             const { chart } = ctx;
 
                             const area = chart.chartArea;
@@ -232,6 +243,7 @@ type AutoSpeedConfig = {
                     },
                 },
             },
+            plugins: [playheadLinePlugin],
         });
 
         return chart;
@@ -299,6 +311,9 @@ type AutoSpeedConfig = {
         }
 
         const duration = Number.isFinite(video.duration) ? video.duration : 0;
+
+        playhead.duration = duration;
+        playhead.time = video.currentTime;
 
         if (captionIntervals.length === 0 || duration <= 0) {
             chart.data.labels = [];
@@ -441,8 +456,33 @@ type AutoSpeedConfig = {
         setSpeed(desired);
     }
 
+    function refreshPlayhead() {
+        if (!chart || !overlay || overlay.style.display === "none") {
+            return;
+        }
+
+        const now = performance.now();
+
+        if (now - lastPlayheadRender < 100) {
+            return;
+        }
+
+        if (getComputedStyle(overlay).opacity === "0") {
+            return;
+        }
+
+        if (!video) {
+            return;
+        }
+
+        lastPlayheadRender = now;
+        playhead.time = video.currentTime;
+        chart.render();
+    }
+
     function tick() {
         updateSpeed();
+        refreshPlayhead();
 
         requestAnimationFrame(tick);
     }
