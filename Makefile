@@ -4,7 +4,8 @@ ZIP := youtube-auto-speed.zip
 
 .PHONY: build typecheck clean zip
 
-build:
+build: clean
+	bunx @tailwindcss/cli -i src/popup.css -o dist/popup.css
 	bun build $(SRC) --outdir=$(OUT_DIR) --target=browser --minify --sourcemap=linked
 
 typecheck:
