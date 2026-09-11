@@ -347,6 +347,10 @@ type AutoSpeedConfig = {
         playhead.time = video.currentTime;
 
         if (captionIntervals.length === 0 || duration <= 0) {
+            if (cachedChartKey === "") {
+                return;
+            }
+
             cachedChartKey = "";
 
             cachedChartPoints = [];
@@ -360,9 +364,10 @@ type AutoSpeedConfig = {
             return;
         }
 
-        // Only resample when captions, duration, or speed config actually
-        // change. The interval array is reassigned (new reference) whenever
-        // captions arrive, so `captionVersion` is a cheap correctness guard.
+        // Only resample and rerender when captions, duration, or speed config
+        // actually change. Otherwise the point data is identical, and calling
+        // `chart.update` again would redundantly re-render on every player DOM
+        // mutation that reaches `checkForVideo`.
         const cacheKey = [
             captionVersion,
             duration.toFixed(3),
@@ -384,28 +389,28 @@ type AutoSpeedConfig = {
                 duration / MAX_CHART_SAMPLES,
             );
 
+            chart.data.labels = cachedChartPoints.map((point) =>
+                point.time.toFixed(2),
+            );
+
+            dataset.data = cachedChartPoints.map((point) => point.speed);
+
+            const yScale = chart.options.scales?.y as
+                | { min?: number; max?: number }
+                | undefined;
+
+            if (yScale) {
+                yScale.min = config.talkingSpeed;
+
+                yScale.max = config.silentSpeed;
+            }
+
             cachedChartKey = cacheKey;
+
+            chart.update("none");
 
             log(`Chart resampled with ${cachedChartPoints.length} samples`);
         }
-
-        chart.data.labels = cachedChartPoints.map((point) =>
-            point.time.toFixed(2),
-        );
-
-        dataset.data = cachedChartPoints.map((point) => point.speed);
-
-        const yScale = chart.options.scales?.y as
-            | { min?: number; max?: number }
-            | undefined;
-
-        if (yScale) {
-            yScale.min = config.talkingSpeed;
-
-            yScale.max = config.silentSpeed;
-        }
-
-        chart.update("none");
     }
 
     function processCaptionData(data: TimedText | null) {
@@ -567,10 +572,46 @@ type AutoSpeedConfig = {
         }
     }
 
+    function handlePlay() {
+        updateSpeed();
+        requestTick();
+    }
+
+    function handlePlaying() {
+        updateSpeed();
+        requestTick();
+    }
+
+    function handlePause() {
+        setSpeed(1);
+    }
+
+    function handleEnded() {
+        setSpeed(1);
+    }
+
+    function detachVideo() {
+        if (!video) {
+            return;
+        }
+
+        video.removeEventListener("play", handlePlay);
+        video.removeEventListener("playing", handlePlaying);
+        video.removeEventListener("pause", handlePause);
+        video.removeEventListener("ended", handleEnded);
+        video.removeEventListener("seeked", updateSpeed);
+        video.removeEventListener("loadedmetadata", updateChart);
+        video.removeEventListener("durationchange", updateChart);
+
+        video = null;
+    }
+
     function attachVideo(newVideo: HTMLVideoElement) {
         if (!newVideo || newVideo === video) {
             return;
         }
+
+        detachVideo();
 
         log("Video attached");
 
@@ -578,24 +619,10 @@ type AutoSpeedConfig = {
 
         setSpeed(1);
 
-        video.addEventListener("play", () => {
-            updateSpeed();
-            requestTick();
-        });
-
-        video.addEventListener("playing", () => {
-            updateSpeed();
-            requestTick();
-        });
-
-        video.addEventListener("pause", () => {
-            setSpeed(1);
-        });
-
-        video.addEventListener("ended", () => {
-            setSpeed(1);
-        });
-
+        video.addEventListener("play", handlePlay);
+        video.addEventListener("playing", handlePlaying);
+        video.addEventListener("pause", handlePause);
+        video.addEventListener("ended", handleEnded);
         video.addEventListener("seeked", updateSpeed);
         video.addEventListener("loadedmetadata", updateChart);
         video.addEventListener("durationchange", updateChart);
@@ -721,13 +748,41 @@ type AutoSpeedConfig = {
         updateChart();
     });
 
+    let observedTarget: Node | null = null;
+
     const pageObserver = new MutationObserver(() => {
+        observePrimaryTarget();
         checkForVideo();
     });
 
-    pageObserver.observe(document.body, {
-        subtree: true,
-        childList: true,
+    /**
+     * Watch `#movie_player` (where the `<video>` lives) instead of the whole
+     * page. YouTube's home/feed/ads mutate the document constantly, and a
+     * body-wide observer would fire on every one of those changes.
+     *
+     * Falls back to `document.body` when the player is missing, so a newly
+     * inserted player is still detected. The target is re-derived on the
+     * YouTube SPA navigation event because the whole `#movie_player` element
+     * can be replaced between pages.
+     */
+    function observePrimaryTarget() {
+        const player = document.querySelector<HTMLElement>("#movie_player");
+        const target = player ?? document.body;
+
+        if (target === observedTarget) {
+            return;
+        }
+
+        pageObserver.disconnect();
+        pageObserver.observe(target, { subtree: true, childList: true });
+        observedTarget = target;
+    }
+
+    observePrimaryTarget();
+
+    window.addEventListener("yt-navigate-finish", () => {
+        observePrimaryTarget();
+        checkForVideo();
     });
 
     checkForVideo();
