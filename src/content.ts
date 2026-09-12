@@ -26,10 +26,15 @@ import type {
 } from "./types";
 
 (() => {
-    const config: AutoSpeedConfig = {
+    const config: AutoSpeedConfig & {
+        talkingSpeedConfig: number;
+        talkingSpeedBoost: number;
+    } = {
         enabled: true,
         rampDurationSeconds: DEFAULT_RAMP_DURATION,
         talkingSpeed: DEFAULT_TALKING_SPEED,
+        talkingSpeedConfig: DEFAULT_TALKING_SPEED,
+        talkingSpeedBoost: BOOST_SPEED,
         silentSpeed: DEFAULT_SILENT_SPEED,
     };
 
@@ -43,15 +48,13 @@ import type {
         console.debug("[Auto Speed]", ...args);
     }
 
-    let originalTalkingSpeed = config.talkingSpeed;
     const overlay = createChartOverlay(log, {
         onBoostStart: () => {
-            log(`Boosting speed to ${BOOST_SPEED}`);
-            originalTalkingSpeed = config.talkingSpeed;
-            setTalkingSpeed(BOOST_SPEED);
+            log(`Boosting speed to ${config.talkingSpeedBoost}`);
+            setTalkingSpeed(config.talkingSpeedBoost, true);
         },
         onBoostEnd: () => {
-            setTalkingSpeed(originalTalkingSpeed);
+            setTalkingSpeed(config.talkingSpeedConfig);
         },
     });
 
@@ -235,7 +238,7 @@ import type {
         log(`Ramp duration: ${clamped}s`);
     }
 
-    function setTalkingSpeed(speed: number) {
+    function setTalkingSpeed(speed: number, isBoost = false) {
         const clamped = Math.min(
             MAX_TALKING_SPEED,
             Math.max(MIN_TALKING_SPEED, speed),
@@ -250,6 +253,9 @@ import type {
         }
 
         config.talkingSpeed = clamped;
+        if (!isBoost) {
+            config.talkingSpeedConfig = clamped;
+        }
         updateSpeed();
         updateChart();
         log(`Talking speed: ${clamped}x`);

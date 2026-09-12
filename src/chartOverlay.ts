@@ -224,6 +224,7 @@ export function createChartOverlay(
 
             overlay.addEventListener("mousedown", options.onBoostStart);
             overlay.addEventListener("mouseup", options.onBoostEnd);
+            overlay.addEventListener("mouseleave", options.onBoostEnd);
 
             log("Chart created");
         }
