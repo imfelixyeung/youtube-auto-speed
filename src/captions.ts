@@ -82,7 +82,10 @@ export function captionsToIntervals(data: TimedText | null): TimedInterval[] {
             continue;
         }
 
-        const text = event.segs.map((seg) => seg.utf8 ?? "").join("");
+        const text = event.segs
+            .map((seg) => seg.utf8 ?? "")
+            .filter((seg) => seg?.trim() && !isNonSpeech(seg))
+            .join("");
 
         if (!text.trim() || isNonSpeech(text)) {
             continue;
