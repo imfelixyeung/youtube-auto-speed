@@ -30,6 +30,12 @@ export type ChartOverlay = {
     update: (data: ChartData) => void;
     refreshPlayhead: (time: number) => void;
     setBadgeText: (text: string) => void;
+    /**
+     * Reflect whether the current video actually has captions available.
+     * Auto speed is active but has no data to drive it, so the badge is
+     * dimmed to signal the state.
+     */
+    setBadgeActive: (active: boolean) => void;
 };
 
 Chart.register(
@@ -58,6 +64,7 @@ export function createChartOverlay(
 ): ChartOverlay {
     let overlay: HTMLElement | null = null;
     let badge: HTMLElement | null = null;
+    let badgeActive = true;
     let chart: Chart | null = null;
     let fillGradient: CanvasGradient | null = null;
     let fillGradientArea = { top: 0, bottom: 0 };
@@ -310,10 +317,20 @@ export function createChartOverlay(
         }
     }
 
+    function setBadgeActive(active: boolean) {
+        if (!badge || active === badgeActive) {
+            return;
+        }
+
+        badgeActive = active;
+        badge.classList.toggle("auto-speed-badge--inactive", !active);
+    }
+
     return {
         attach,
         update,
         refreshPlayhead,
         setBadgeText,
+        setBadgeActive,
     };
 }

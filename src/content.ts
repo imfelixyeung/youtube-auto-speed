@@ -40,6 +40,7 @@ import type {
     let video: HTMLVideoElement | null = null;
     let captionIntervals: TimedInterval[] = [];
     let captionVersion = 0;
+    let currentVideoId: string | null = null;
 
     function log(...args: unknown[]) {
         console.debug("[Auto Speed]", ...args);
@@ -69,6 +70,25 @@ import type {
         ) as HTMLVideoElement;
     }
 
+    function getCurrentVideoId() {
+        try {
+            const url = new URL(window.location.href);
+            const queryId = url.searchParams.get("v");
+
+            if (queryId) {
+                return queryId;
+            }
+
+            const match = url.pathname.match(
+                /^\/(?:shorts|embed|live|v)\/([^/]+)/,
+            );
+
+            return match?.[1] ?? null;
+        } catch {
+            return null;
+        }
+    }
+
     function updateSpeed() {
         speed.update();
     }
@@ -80,10 +100,17 @@ import type {
         const player = document.querySelector<HTMLElement>("#movie_player");
 
         overlay.attach(player, config.enabled);
+        updateBadgeCaptionState();
     }
 
     function updateChart() {
         overlay.update({ video, captionIntervals, captionVersion, config });
+    }
+
+    function updateBadgeCaptionState() {
+        // Gray out the badge when the extension is active but the current
+        // video has no captions to drive the auto speed.
+        overlay.setBadgeActive(config.enabled && captionIntervals.length > 0);
     }
 
     function refreshPlayhead() {
@@ -178,6 +205,28 @@ import type {
         attachOverlay();
     }
 
+    /**
+     * YouTube is an SPA, so a navigation can swap videos without any caption
+     * request for the new one (e.g. it has no subtitles). Drop stale intervals
+     * from the previous video and recompute the current video id.
+     */
+    function resetForNavigation() {
+        const nextVideoId = getCurrentVideoId();
+
+        if (nextVideoId === currentVideoId) {
+            return;
+        }
+
+        currentVideoId = nextVideoId;
+        captionIntervals = [];
+        captionVersion++;
+
+        updateSpeed();
+        updateChart();
+        updateBadgeCaptionState();
+        log(`Reset captions for video ${currentVideoId}`);
+    }
+
     function propagateConfig() {
         const event = new CustomEvent<AutoSpeedConfigChangedEvent["detail"]>(
             "AUTO_SPEED_CONFIG_CHANGED",
@@ -208,6 +257,7 @@ import type {
         }
 
         attachOverlay();
+        updateBadgeCaptionState();
         log(`Auto speed ${config.enabled ? "enabled" : "disabled"}`);
     }
 
@@ -271,9 +321,13 @@ import type {
     }
 
     window.addEventListener("AUTO_SPEED_CAPTIONS", (event) => {
-        const data = (event as AutoSpeedCaptionsEvent).detail?.data;
+        const { videoId, data } = (event as AutoSpeedCaptionsEvent).detail;
 
         if (!data || !config.enabled) {
+            return;
+        }
+
+        if (videoId !== currentVideoId) {
             return;
         }
 
@@ -286,6 +340,7 @@ import type {
         // probably means a new video or language.
         updateSpeed();
         updateChart();
+        updateBadgeCaptionState();
     });
 
     let ticking = false;
@@ -323,7 +378,9 @@ import type {
     window.addEventListener("yt-navigate-finish", () => {
         observePrimaryTarget();
         checkForVideo();
+        resetForNavigation();
     });
+    currentVideoId = getCurrentVideoId();
     checkForVideo();
     requestTick();
 

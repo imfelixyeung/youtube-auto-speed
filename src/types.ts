@@ -6,6 +6,7 @@ export type AutoSpeedConfig = {
 };
 
 export type AutoSpeedCaptionsEvent = CustomEvent<{
+    videoId: string;
     url: string;
     data: TimedText;
 }>;

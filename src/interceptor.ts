@@ -20,6 +20,17 @@ import type { AutoSpeedConfigChangedEvent } from "./types";
         }
     }
 
+    function extractVideoId(url: string): string | null {
+        try {
+            const videoId = new URL(url, window.location.href).searchParams.get(
+                "v",
+            );
+            return videoId ?? null;
+        } catch {
+            return null;
+        }
+    }
+
     function sendCaptionData(url: string, text: string) {
         if (!enabled) {
             return;
@@ -45,6 +56,7 @@ import type { AutoSpeedConfigChangedEvent } from "./types";
             window.dispatchEvent(
                 new CustomEvent("AUTO_SPEED_CAPTIONS", {
                     detail: {
+                        videoId: extractVideoId(url),
                         url,
                         data,
                     },
