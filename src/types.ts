@@ -17,7 +17,7 @@ export type AutoSpeedConfigChangedEvent = CustomEvent<{
 export type TimedTextEventItem = {
     tStartMs: number;
     dDurationMs: number;
-    segs?: { utf8: string }[];
+    segs?: { utf8: string; tOffsetMs?: number }[];
 };
 export type TimedText = {
     events: TimedTextEventItem[];

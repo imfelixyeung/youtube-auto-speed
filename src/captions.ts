@@ -18,7 +18,7 @@ export function mergeIntervals(intervals: TimedInterval[]): TimedInterval[] {
 
     const merged: TimedInterval[] = [];
 
-    const GAP_TO_MERGE = 0.05;
+    const GAP_TO_MERGE = 0.5;
 
     for (const interval of intervals) {
         const previous = merged[merged.length - 1];
@@ -82,15 +82,19 @@ export function captionsToIntervals(data: TimedText | null): TimedInterval[] {
             continue;
         }
 
-        const start = event.tStartMs / 1000;
-
-        const end = (event.tStartMs + event.dDurationMs) / 1000;
-
         const text = event.segs.map((seg) => seg.utf8 ?? "").join("");
 
         if (!text.trim() || isNonSpeech(text)) {
             continue;
         }
+
+        const last = event.segs[event.segs.length - 1];
+        const start = event.tStartMs / 1000;
+        const eventEnd = (event.tStartMs + event.dDurationMs) / 1000;
+        const segDuration = 1.5; // Assumption.
+        const end = last?.tOffsetMs
+            ? Math.min(start + last.tOffsetMs / 1000 + segDuration, eventEnd)
+            : eventEnd;
 
         intervals.push({
             start,
