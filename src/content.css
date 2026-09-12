@@ -38,6 +38,7 @@
         transition:
             background-color 0.15s ease,
             border-radius 0.15s ease;
+        touch-action: none;
     }
 
     .auto-speed-chart {

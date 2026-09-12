@@ -2,6 +2,7 @@ import "./content.css";
 import { captionsToIntervals } from "./captions";
 import { createChartOverlay } from "./chartOverlay";
 import {
+    BOOST_SPEED,
     DEFAULT_RAMP_DURATION,
     DEFAULT_SILENT_SPEED,
     DEFAULT_TALKING_SPEED,
@@ -42,7 +43,17 @@ import type {
         console.debug("[Auto Speed]", ...args);
     }
 
-    const overlay = createChartOverlay(log);
+    let originalTalkingSpeed = config.talkingSpeed;
+    const overlay = createChartOverlay(log, {
+        onBoostStart: () => {
+            log(`Boosting speed to ${BOOST_SPEED}`);
+            originalTalkingSpeed = config.talkingSpeed;
+            setTalkingSpeed(BOOST_SPEED);
+        },
+        onBoostEnd: () => {
+            setTalkingSpeed(originalTalkingSpeed);
+        },
+    });
 
     const speed = createSpeedControl({
         getVideo: () => video,

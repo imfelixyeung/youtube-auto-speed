@@ -51,6 +51,10 @@ const MAX_CHART_SAMPLES = 4000;
  */
 export function createChartOverlay(
     log: (...args: unknown[]) => void,
+    options: {
+        onBoostStart: () => void;
+        onBoostEnd: () => void;
+    },
 ): ChartOverlay {
     let overlay: HTMLElement | null = null;
 
@@ -217,6 +221,9 @@ export function createChartOverlay(
             overlay.addEventListener("mouseleave", () => {
                 overlayHovered = false;
             });
+
+            overlay.addEventListener("mousedown", options.onBoostStart);
+            overlay.addEventListener("mouseup", options.onBoostEnd);
 
             log("Chart created");
         }

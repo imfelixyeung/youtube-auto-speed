@@ -16,3 +16,5 @@ export const MIN_SILENT_SPEED = 0.25;
 export const MAX_SILENT_SPEED = 16;
 
 export const SPEED_STEP = 0.05;
+
+export const BOOST_SPEED = 2.0;
