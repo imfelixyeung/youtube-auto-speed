@@ -11,6 +11,7 @@ import {
     MIN_TALKING_SPEED,
     RAMP_DURATION_KEY,
     SILENT_SPEED_KEY,
+    SPEED_STEP,
     TALKING_SPEED_KEY,
 } from "./config";
 
@@ -23,6 +24,14 @@ const talkingInput = document.getElementById(
 ) as HTMLInputElement;
 
 const silentInput = document.getElementById("silent-speed") as HTMLInputElement;
+
+talkingInput.min = String(MIN_TALKING_SPEED);
+talkingInput.max = String(MAX_TALKING_SPEED);
+talkingInput.step = String(SPEED_STEP);
+
+silentInput.min = String(MIN_SILENT_SPEED);
+silentInput.max = String(MAX_SILENT_SPEED);
+silentInput.step = String(SPEED_STEP);
 
 let talkingSpeed = DEFAULT_TALKING_SPEED;
 let silentSpeed = DEFAULT_SILENT_SPEED;
@@ -92,9 +101,9 @@ rampInput.addEventListener("change", () => {
 });
 
 talkingInput.addEventListener("change", () => {
-    const value = Number(talkingInput.value.trim());
+    const value = Number(talkingInput.value);
 
-    if (!Number.isFinite(value)) {
+    if (talkingInput.value === "" || !Number.isFinite(value)) {
         talkingInput.value = String(talkingSpeed);
 
         return;
@@ -115,9 +124,9 @@ talkingInput.addEventListener("change", () => {
 });
 
 silentInput.addEventListener("change", () => {
-    const value = Number(silentInput.value.trim());
+    const value = Number(silentInput.value);
 
-    if (!Number.isFinite(value)) {
+    if (silentInput.value === "" || !Number.isFinite(value)) {
         silentInput.value = String(silentSpeed);
 
         return;

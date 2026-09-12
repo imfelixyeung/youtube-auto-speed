@@ -14,3 +14,5 @@ export const MAX_TALKING_SPEED = 4;
 export const DEFAULT_SILENT_SPEED = 2;
 export const MIN_SILENT_SPEED = 0.25;
 export const MAX_SILENT_SPEED = 16;
+
+export const SPEED_STEP = 0.05;
