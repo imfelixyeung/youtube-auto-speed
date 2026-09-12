@@ -16,6 +16,7 @@ import {
     type TimedInterval,
 } from "./speedCurve";
 import type { AutoSpeedConfig } from "./types";
+import { cssVar } from "./utils";
 
 export type ChartData = {
     video: HTMLVideoElement | null;
@@ -98,7 +99,7 @@ export function createChartOverlay(
                 datasets: [
                     {
                         data: [],
-                        borderColor: "rgba(255, 255, 255, 0.9)",
+                        borderColor: "rgba(255, 255, 255, 0.5)",
                         borderWidth: 1,
                         pointRadius: 0,
                         fill: true,
@@ -127,12 +128,15 @@ export function createChartOverlay(
 
                                 fillGradient.addColorStop(
                                     0,
-                                    "rgba(0, 0, 0, 0.5)",
+                                    cssVar(
+                                        canvas,
+                                        "--auto-speed-gradient-from",
+                                    ),
                                 );
 
                                 fillGradient.addColorStop(
                                     1,
-                                    "rgba(0, 0, 0, 0.25)",
+                                    cssVar(canvas, "--auto-speed-gradient-to"),
                                 );
 
                                 fillGradientArea = {
