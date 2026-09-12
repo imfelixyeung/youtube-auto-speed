@@ -1,3 +1,10 @@
+export type AutoSpeedConfig = {
+    enabled: boolean;
+    rampDurationSeconds: number;
+    talkingSpeed: number;
+    silentSpeed: number;
+};
+
 export type AutoSpeedCaptionsEvent = CustomEvent<{
     url: string;
     data: TimedText;

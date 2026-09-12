@@ -1,0 +1,352 @@
+import {
+    CategoryScale,
+    Chart,
+    Filler,
+    LinearScale,
+    LineController,
+    LineElement,
+    PointElement,
+    type ScriptableContext,
+} from "chart.js";
+import { createPlayheadPlugin, type PlayheadState } from "./playheadPlugin";
+import {
+    easeInOutCubic,
+    type SpeedPoint,
+    sampleSpeedCurve,
+    type TimedInterval,
+} from "./speedCurve";
+import type { AutoSpeedConfig } from "./types";
+
+export type ChartData = {
+    video: HTMLVideoElement | null;
+    captionIntervals: TimedInterval[];
+    captionVersion: number;
+    config: AutoSpeedConfig;
+};
+
+export type ChartOverlay = {
+    attach: (player: HTMLElement | null, enabled: boolean) => void;
+    update: (data: ChartData) => void;
+    refreshPlayhead: (time: number) => void;
+    setBadgeText: (text: string) => void;
+};
+
+Chart.register(
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Filler,
+);
+
+const MAX_CHART_SAMPLES = 4000;
+
+/**
+ * Owns the badge + speed-curve chart overlay attached to YouTube's player.
+ *
+ * The player (`#movie_player`) is the element that goes fullscreen, so an
+ * overlay appended to it stays pinned to the video in all display modes.
+ */
+export function createChartOverlay(
+    log: (...args: unknown[]) => void,
+): ChartOverlay {
+    let overlay: HTMLElement | null = null;
+
+    let badge: HTMLElement | null = null;
+
+    let chart: Chart | null = null;
+
+    let fillGradient: CanvasGradient | null = null;
+
+    let fillGradientArea = { top: 0, bottom: 0 };
+
+    const playhead: PlayheadState = {
+        time: 0,
+        duration: 0,
+    };
+
+    const playheadLinePlugin = createPlayheadPlugin(() => playhead);
+
+    let lastPlayheadRender = 0;
+
+    let overlayHovered = false;
+
+    let cachedChartKey = "";
+
+    let cachedChartPoints: SpeedPoint[] = [];
+
+    let lastData: ChartData | null = null;
+
+    function createBadge(): HTMLElement {
+        const badgeEl = document.createElement("div");
+
+        badgeEl.className = "auto-speed-badge";
+
+        badgeEl.setAttribute("data-auto-speed-badge", "");
+
+        badgeEl.textContent = "1.00x";
+
+        return badgeEl;
+    }
+
+    function createChart(canvas: HTMLCanvasElement): Chart {
+        const chart = new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        data: [],
+                        borderColor: "rgba(255, 255, 255, 0.9)",
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: (ctx: ScriptableContext<"line">) => {
+                            const { chart } = ctx;
+
+                            const area = chart.chartArea;
+
+                            if (!area) {
+                                return "transparent";
+                            }
+
+                            // Reuse the gradient across renders; recreate it
+                            // only when the chart area actually resized.
+                            if (
+                                !fillGradient ||
+                                fillGradientArea.top !== area.top ||
+                                fillGradientArea.bottom !== area.bottom
+                            ) {
+                                fillGradient = chart.ctx.createLinearGradient(
+                                    0,
+                                    area.top,
+                                    0,
+                                    area.bottom,
+                                );
+
+                                fillGradient.addColorStop(
+                                    0,
+                                    "rgba(0, 0, 0, 0.5)",
+                                );
+
+                                fillGradient.addColorStop(
+                                    1,
+                                    "rgba(0, 0, 0, 0.25)",
+                                );
+
+                                fillGradientArea = {
+                                    top: area.top,
+                                    bottom: area.bottom,
+                                };
+                            }
+
+                            return fillGradient;
+                        },
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                events: [],
+                layout: {
+                    padding: 0,
+                },
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                    tooltip: {
+                        enabled: false,
+                    },
+                },
+                scales: {
+                    x: {
+                        display: false,
+                    },
+                    y: {
+                        display: false,
+                        min: 1,
+                        max: 2,
+                        reverse: true,
+                    },
+                },
+            },
+            plugins: [playheadLinePlugin],
+        });
+
+        return chart;
+    }
+
+    function attach(player: HTMLElement | null, enabled: boolean) {
+        if (!player) {
+            return;
+        }
+
+        if (!overlay) {
+            const canvas = document.createElement("canvas");
+
+            canvas.className = "auto-speed-chart";
+
+            canvas.setAttribute("data-auto-speed-chart", "");
+
+            overlay = document.createElement("div");
+
+            overlay.className = "auto-speed-overlay";
+
+            overlay.setAttribute("data-auto-speed-overlay", "");
+
+            overlay.appendChild(canvas);
+
+            badge = createBadge();
+
+            overlay.appendChild(badge);
+
+            chart = createChart(canvas);
+
+            overlay.addEventListener("mouseenter", () => {
+                overlayHovered = true;
+            });
+
+            overlay.addEventListener("mouseleave", () => {
+                overlayHovered = false;
+            });
+
+            log("Chart created");
+        }
+
+        if (overlay.parentElement !== player) {
+            overlay.remove();
+
+            player.appendChild(overlay);
+        }
+
+        overlay.style.display = enabled ? "block" : "none";
+
+        if (lastData) {
+            update(lastData);
+        }
+    }
+
+    function update(data: ChartData) {
+        lastData = data;
+
+        if (!chart || !data.video) {
+            return;
+        }
+
+        const dataset = chart.data.datasets[0];
+
+        if (!dataset) {
+            return;
+        }
+
+        const duration = Number.isFinite(data.video.duration)
+            ? data.video.duration
+            : 0;
+
+        playhead.duration = duration;
+        playhead.time = data.video.currentTime;
+
+        if (data.captionIntervals.length === 0 || duration <= 0) {
+            if (cachedChartKey === "") {
+                return;
+            }
+
+            cachedChartKey = "";
+
+            cachedChartPoints = [];
+
+            chart.data.labels = [];
+
+            dataset.data = [];
+
+            chart.update("none");
+
+            return;
+        }
+
+        // Only resample and rerender when captions, duration, or speed config
+        // actually change. Otherwise the point data is identical, and calling
+        // `chart.update` again would redundantly re-render on every player DOM
+        // mutation that reaches `checkForVideo`.
+        const cacheKey = [
+            data.captionVersion,
+            duration.toFixed(3),
+            data.config.talkingSpeed,
+            data.config.silentSpeed,
+            data.config.rampDurationSeconds,
+        ].join("|");
+
+        if (cacheKey !== cachedChartKey) {
+            cachedChartPoints = sampleSpeedCurve(
+                data.captionIntervals,
+                {
+                    talkingSpeed: data.config.talkingSpeed,
+                    silentSpeed: data.config.silentSpeed,
+                    rampDurationSeconds: data.config.rampDurationSeconds,
+                    easing: easeInOutCubic,
+                },
+                duration,
+                duration / MAX_CHART_SAMPLES,
+            );
+
+            chart.data.labels = cachedChartPoints.map((point) =>
+                point.time.toFixed(2),
+            );
+
+            dataset.data = cachedChartPoints.map((point) => point.speed);
+
+            const yScale = chart.options.scales?.y as
+                | { min?: number; max?: number }
+                | undefined;
+
+            if (yScale) {
+                yScale.min = data.config.talkingSpeed;
+
+                yScale.max = data.config.silentSpeed;
+            }
+
+            cachedChartKey = cacheKey;
+
+            chart.update("none");
+
+            log(`Chart resampled with ${cachedChartPoints.length} samples`);
+        }
+    }
+
+    function refreshPlayhead(time: number) {
+        if (!chart || !overlay || overlay.style.display === "none") {
+            return;
+        }
+
+        if (!overlayHovered) {
+            return;
+        }
+
+        const now = performance.now();
+
+        if (now - lastPlayheadRender < 100) {
+            return;
+        }
+
+        lastPlayheadRender = now;
+        playhead.time = time;
+        chart.render();
+    }
+
+    function setBadgeText(text: string) {
+        if (badge) {
+            badge.textContent = text;
+        }
+    }
+
+    return {
+        attach,
+        update,
+        refreshPlayhead,
+        setBadgeText,
+    };
+}
