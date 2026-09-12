@@ -1,5 +1,9 @@
 import "./content.css";
-import { captionsToIntervals } from "./captions";
+import {
+    cacheTimedText,
+    captionsToIntervals,
+    getCachedTimedText,
+} from "./captions";
 import { createChartOverlay } from "./chartOverlay";
 import {
     BOOST_SPEED,
@@ -23,6 +27,7 @@ import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,
     AutoSpeedConfigChangedEvent,
+    TimedText,
 } from "./types";
 
 (() => {
@@ -204,6 +209,19 @@ import type {
         attachOverlay();
     }
 
+    function applyCaptions(data: TimedText, source: "cache" | "network") {
+        captionIntervals = captionsToIntervals(data);
+        captionVersion++;
+        log(`Loaded ${captionIntervals.length} caption intervals (${source})`);
+        log(captionIntervals.slice(0, 10));
+
+        // Immediately recalculate because new captions probably mean a new
+        // video or language.
+        updateSpeed();
+        updateChart();
+        updateBadgeCaptionState();
+    }
+
     /**
      * YouTube is an SPA, so a navigation can swap videos without any caption
      * request for the new one (e.g. it has no subtitles). Drop stale intervals
@@ -218,6 +236,17 @@ import type {
 
         currentVideoId = nextVideoId;
         captionIntervals = [];
+
+        // Reuse previously-intercepted captions for this video: YouTube
+        // sometimes skips the timedtext request for a video it has already
+        // loaded because of its own caches, so the interceptor never fires.
+        const cached = getCachedTimedText(currentVideoId ?? "");
+
+        if (cached) {
+            applyCaptions(cached, "cache");
+            return;
+        }
+
         captionVersion++;
 
         updateSpeed();
@@ -326,20 +355,16 @@ import type {
             return;
         }
 
+        // Remember the raw data so a later visit to the same video still has
+        // speed intervals even when YouTube serves the captions from its own
+        // caches and never re-fetches timedtext.
+        cacheTimedText(videoId, data);
+
         if (videoId !== currentVideoId) {
             return;
         }
 
-        captionIntervals = captionsToIntervals(data);
-        captionVersion++;
-        log(`Loaded ${captionIntervals.length} caption intervals`);
-        log(captionIntervals.slice(0, 10));
-
-        // Immediately recalculate because a new caption track
-        // probably means a new video or language.
-        updateSpeed();
-        updateChart();
-        updateBadgeCaptionState();
+        applyCaptions(data, "network");
     });
 
     let ticking = false;

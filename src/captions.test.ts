@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { captionsToIntervals, mergeIntervals } from "./captions";
+import {
+    cacheTimedText,
+    captionsToIntervals,
+    getCachedTimedText,
+    mergeIntervals,
+} from "./captions";
 import type { TimedText } from "./types";
 
 describe("mergeIntervals", () => {
@@ -243,5 +248,70 @@ describe("captionsToIntervals", () => {
             { start: 1, end: 3.1 },
             { start: 5, end: 6 },
         ]);
+    });
+});
+
+describe("timedtext cache", () => {
+    test("returns null before anything is cached", () => {
+        expect(getCachedTimedText("video-a")).toBeNull();
+    });
+
+    test("returns the cached data for the matching video", () => {
+        const data: TimedText = {
+            events: [
+                { tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: "hi" }] },
+            ],
+        };
+
+        cacheTimedText("video-a", data);
+
+        expect(getCachedTimedText("video-a")).toEqual(data);
+        expect(getCachedTimedText("video-b")).toBeNull();
+    });
+
+    test("replaces data for a re-cached video", () => {
+        cacheTimedText("video-a", {
+            events: [{ tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "old" }] }],
+        });
+        cacheTimedText("video-a", {
+            events: [{ tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "new" }] }],
+        });
+
+        expect(getCachedTimedText("video-a")?.events[0]?.segs?.[0]?.utf8).toBe(
+            "new",
+        );
+    });
+
+    test("evicts the least-recently-used entry past the cap", () => {
+        for (let i = 0; i < 21; i++) {
+            cacheTimedText(`video-${i}`, {
+                events: [
+                    { tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "x" }] },
+                ],
+            });
+        }
+
+        expect(getCachedTimedText("video-0")).toBeNull();
+        expect(getCachedTimedText("video-20")).not.toBeNull();
+    });
+
+    test("accessing an entry makes it the most-recently-used", () => {
+        for (let i = 0; i < 20; i++) {
+            cacheTimedText(`video-${i}`, {
+                events: [
+                    { tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "x" }] },
+                ],
+            });
+        }
+
+        // Touching video-0 moves it to the back, so inserting a 21st entry
+        // evicts video-1 instead.
+        expect(getCachedTimedText("video-0")).not.toBeNull();
+        cacheTimedText("video-20", {
+            events: [{ tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "x" }] }],
+        });
+
+        expect(getCachedTimedText("video-1")).toBeNull();
+        expect(getCachedTimedText("video-0")).not.toBeNull();
     });
 });
