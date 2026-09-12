@@ -15,8 +15,7 @@ lint:
 	bunx @biomejs/biome check .
 
 test:
-	bunx tsc --noEmit -p tsconfig.test.json
-	bun test src
+	bun test
 
 zip: | build
 	zip -r $(ZIP) manifest.json $(OUT_DIR)
@@ -25,4 +24,3 @@ clean:
 	rm -rf $(OUT_DIR) $(ZIP)
 
 ci: typecheck lint build
-	@echo done

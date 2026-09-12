@@ -70,7 +70,7 @@ import type { AutoSpeedConfigChangedEvent } from "./types";
 
     const originalFetch = window.fetch;
 
-    window.fetch = async function (...args) {
+    window.fetch = async function (this: typeof globalThis, ...args) {
         const response = await originalFetch.apply(this, args);
 
         try {
@@ -103,7 +103,7 @@ import type { AutoSpeedConfigChangedEvent } from "./types";
         }
 
         return response;
-    };
+    } as typeof fetch;
 
     // ============================================================
     // XMLHttpRequest
