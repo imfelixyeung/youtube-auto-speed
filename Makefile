@@ -11,6 +11,9 @@ build: clean
 typecheck:
 	bunx tsc --noEmit
 
+lint:
+	bunx @biomejs/biome check .
+
 test:
 	bunx tsc --noEmit -p tsconfig.test.json
 	bun test src
@@ -20,3 +23,6 @@ zip: | build
 
 clean:
 	rm -rf $(OUT_DIR) $(ZIP)
+
+ci: typecheck lint build
+	@echo done
