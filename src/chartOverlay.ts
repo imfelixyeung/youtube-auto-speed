@@ -57,13 +57,9 @@ export function createChartOverlay(
     },
 ): ChartOverlay {
     let overlay: HTMLElement | null = null;
-
     let badge: HTMLElement | null = null;
-
     let chart: Chart | null = null;
-
     let fillGradient: CanvasGradient | null = null;
-
     let fillGradientArea = { top: 0, bottom: 0 };
 
     const playhead: PlayheadState = {
@@ -74,24 +70,16 @@ export function createChartOverlay(
     const playheadLinePlugin = createPlayheadPlugin(() => playhead);
 
     let lastPlayheadRender = 0;
-
     let overlayHovered = false;
-
     let cachedChartKey = "";
-
     let cachedChartPoints: SpeedPoint[] = [];
-
     let lastData: ChartData | null = null;
 
     function createBadge(): HTMLElement {
         const badgeEl = document.createElement("div");
-
         badgeEl.className = "auto-speed-badge";
-
         badgeEl.setAttribute("data-auto-speed-badge", "");
-
         badgeEl.textContent = "1.00x";
-
         return badgeEl;
     }
 
@@ -129,7 +117,6 @@ export function createChartOverlay(
                                     0,
                                     area.bottom,
                                 );
-
                                 fillGradient.addColorStop(
                                     0,
                                     cssVar(
@@ -137,12 +124,10 @@ export function createChartOverlay(
                                         "--auto-speed-gradient-from",
                                     ),
                                 );
-
                                 fillGradient.addColorStop(
                                     1,
                                     cssVar(canvas, "--auto-speed-gradient-to"),
                                 );
-
                                 fillGradientArea = {
                                     top: area.top,
                                     bottom: area.bottom,
@@ -159,27 +144,14 @@ export function createChartOverlay(
                 maintainAspectRatio: false,
                 animation: false,
                 events: [],
-                layout: {
-                    padding: 0,
-                },
+                layout: { padding: 0 },
                 plugins: {
-                    legend: {
-                        display: false,
-                    },
-                    tooltip: {
-                        enabled: false,
-                    },
+                    legend: { display: false },
+                    tooltip: { enabled: false },
                 },
                 scales: {
-                    x: {
-                        display: false,
-                    },
-                    y: {
-                        display: false,
-                        min: 1,
-                        max: 2,
-                        reverse: true,
-                    },
+                    x: { display: false },
+                    y: { display: false, min: 1, max: 2, reverse: true },
                 },
             },
             plugins: [playheadLinePlugin],
@@ -195,25 +167,15 @@ export function createChartOverlay(
 
         if (!overlay) {
             const canvas = document.createElement("canvas");
-
             canvas.className = "auto-speed-chart";
-
             canvas.setAttribute("data-auto-speed-chart", "");
-
             overlay = document.createElement("div");
-
             overlay.className = "auto-speed-overlay";
-
             overlay.setAttribute("data-auto-speed-overlay", "");
-
             overlay.appendChild(canvas);
-
             badge = createBadge();
-
             overlay.appendChild(badge);
-
             chart = createChart(canvas);
-
             overlay.addEventListener("mouseenter", () => {
                 overlayHovered = true;
             });
@@ -268,15 +230,10 @@ export function createChartOverlay(
             }
 
             cachedChartKey = "";
-
             cachedChartPoints = [];
-
             chart.data.labels = [];
-
             dataset.data = [];
-
             chart.update("none");
-
             return;
         }
 
@@ -322,9 +279,7 @@ export function createChartOverlay(
             }
 
             cachedChartKey = cacheKey;
-
             chart.update("none");
-
             log(`Chart resampled with ${cachedChartPoints.length} samples`);
         }
     }

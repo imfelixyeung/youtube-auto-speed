@@ -44,15 +44,12 @@ export function createSpeedControl(opts: {
         }
 
         video.playbackRate = rounded;
-
         onRateApplied(rounded);
-
         log(`Playback speed: ${rounded}x`);
     }
 
     function update() {
         const video = getVideo();
-
         const config = getConfig();
 
         if (!config.enabled || !video) {

@@ -37,11 +37,8 @@ import type {
         talkingSpeedBoost: BOOST_SPEED,
         silentSpeed: DEFAULT_SILENT_SPEED,
     };
-
     let video: HTMLVideoElement | null = null;
-
     let captionIntervals: TimedInterval[] = [];
-
     let captionVersion = 0;
 
     function log(...args: unknown[]) {
@@ -158,11 +155,8 @@ import type {
         }
 
         detachVideo();
-
         log("Video attached");
-
         video = newVideo;
-
         speed.set(1);
 
         video.addEventListener("play", handlePlay);
@@ -203,7 +197,6 @@ import type {
         }
 
         config.enabled = value;
-
         propagateConfig();
 
         if (config.enabled) {
@@ -215,7 +208,6 @@ import type {
         }
 
         attachOverlay();
-
         log(`Auto speed ${config.enabled ? "enabled" : "disabled"}`);
     }
 
@@ -230,11 +222,8 @@ import type {
         }
 
         config.rampDurationSeconds = clamped;
-
         updateSpeed();
-
         updateChart();
-
         log(`Ramp duration: ${clamped}s`);
     }
 
@@ -289,22 +278,17 @@ import type {
         }
 
         captionIntervals = captionsToIntervals(data);
-
         captionVersion++;
-
         log(`Loaded ${captionIntervals.length} caption intervals`);
-
         log(captionIntervals.slice(0, 10));
 
         // Immediately recalculate because a new caption track
         // probably means a new video or language.
         updateSpeed();
-
         updateChart();
     });
 
     let ticking = false;
-
     let observedTarget: Node | null = null;
 
     const pageObserver = new MutationObserver(() => {
@@ -336,14 +320,11 @@ import type {
     }
 
     observePrimaryTarget();
-
     window.addEventListener("yt-navigate-finish", () => {
         observePrimaryTarget();
         checkForVideo();
     });
-
     checkForVideo();
-
     requestTick();
 
     chrome.storage.sync.get(
