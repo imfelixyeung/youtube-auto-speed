@@ -23,4 +23,4 @@ zip: | build
 clean:
 	rm -rf $(OUT_DIR) $(ZIP)
 
-ci: typecheck lint build
+ci: typecheck lint test build
