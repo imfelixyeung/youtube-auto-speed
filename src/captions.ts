@@ -37,8 +37,30 @@ export function mergeIntervals(intervals: TimedInterval[]): TimedInterval[] {
 }
 
 /**
+ * Non-speech caption fragments (labels, markers, etc.) that are
+ * stripped out of caption text before deciding whether it contains
+ * speech. To add a new label, append a regex here.
+ */
+const NON_SPEECH_PATTERNS: RegExp[] = [
+    /\[music\]/gi,
+    /\[applause\]/gi,
+    /\[laughter\]/gi,
+    />/g,
+];
+
+function isNonSpeech(text: string): boolean {
+    const remaining = NON_SPEECH_PATTERNS.reduce(
+        (result, pattern) => result.replace(pattern, ""),
+        text,
+    );
+
+    return remaining.trim() === "";
+}
+
+/**
  * Convert raw timedtext events into a sorted list of merged speech
- * intervals (in seconds). Empty caption events are ignored.
+ * intervals (in seconds). Empty and non-speech caption events are
+ * ignored.
  */
 export function captionsToIntervals(data: TimedText | null): TimedInterval[] {
     if (!data || !Array.isArray(data.events)) {
@@ -64,10 +86,9 @@ export function captionsToIntervals(data: TimedText | null): TimedInterval[] {
 
         const end = (event.tStartMs + event.dDurationMs) / 1000;
 
-        // Ignore empty caption events.
-        const hasText = event.segs.some((seg) => seg.utf8?.trim());
+        const text = event.segs.map((seg) => seg.utf8 ?? "").join("");
 
-        if (!hasText) {
+        if (!text.trim() || isNonSpeech(text)) {
             continue;
         }
 

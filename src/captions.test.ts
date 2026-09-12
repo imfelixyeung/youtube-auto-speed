@@ -93,6 +93,135 @@ describe("captionsToIntervals", () => {
         expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 4.5 }]);
     });
 
+    test("ignores [music] labels", () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: "[music]" }],
+                },
+                {
+                    tStartMs: 4000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: "hello" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+    });
+
+    test("treats [music] labels as case-insensitive", () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: "[Music]" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([]);
+    });
+
+    test('ignores "> " caption markers', () => {
+        const data: TimedText = {
+            events: [
+                { tStartMs: 1000, dDurationMs: 2000, segs: [{ utf8: "> " }] },
+                {
+                    tStartMs: 4000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: "hello" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+    });
+
+    test('ignores any run of ">" markers with no caption body', () => {
+        const data: TimedText = {
+            events: [
+                { tStartMs: 1000, dDurationMs: 2000, segs: [{ utf8: ">>>>" }] },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([]);
+    });
+
+    test('treats ">>> [music]" as non-speech', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: ">>> [music]" }],
+                },
+                {
+                    tStartMs: 4000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: "hello" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+    });
+
+    test('treats ">> Hello world" as speech', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: ">> Hello world" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+    });
+
+    test('treats "[applause]" and "[laughter]" labels as non-speech', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: "[applause]" }],
+                },
+                {
+                    tStartMs: 3000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: "[laughter]" }],
+                },
+                {
+                    tStartMs: 5000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: "thanks" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([{ start: 5, end: 6 }]);
+    });
+
+    test("joins segments before checking for non-speech labels", () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: "[mu" }, { utf8: "sic]" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([]);
+    });
+
     test("ignores events without segments", () => {
         const data: TimedText = {
             events: [{ tStartMs: 1000, dDurationMs: 2000 }],
