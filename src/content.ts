@@ -61,7 +61,6 @@ import type {
         getConfig: () => config,
         getIntervals: () => captionIntervals,
         onRateApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
-        log,
     });
 
     function findVideo() {
@@ -375,7 +374,7 @@ import type {
     }
 
     observePrimaryTarget();
-    window.addEventListener("yt-navigate-finish", () => {
+    document.addEventListener("yt-navigate-finish", () => {
         observePrimaryTarget();
         checkForVideo();
         resetForNavigation();

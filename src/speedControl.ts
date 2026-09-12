@@ -22,9 +22,8 @@ export function createSpeedControl(opts: {
     getConfig: () => AutoSpeedConfig;
     getIntervals: () => TimedInterval[];
     onRateApplied: (rounded: number) => void;
-    log: (...args: unknown[]) => void;
 }): SpeedControl {
-    const { getVideo, getConfig, getIntervals, onRateApplied, log } = opts;
+    const { getVideo, getConfig, getIntervals, onRateApplied } = opts;
 
     function roundToNearest05(value: number) {
         return Math.round(value / SPEED_STEP) * SPEED_STEP;
@@ -45,7 +44,6 @@ export function createSpeedControl(opts: {
 
         video.playbackRate = rounded;
         onRateApplied(rounded);
-        log(`Playback speed: ${rounded}x`);
     }
 
     function update() {
