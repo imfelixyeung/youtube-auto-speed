@@ -18,7 +18,7 @@ export function mergeIntervals(intervals: TimedInterval[]): TimedInterval[] {
 
     const merged: TimedInterval[] = [];
 
-    const GAP_TO_MERGE = 0.5;
+    const GAP_TO_MERGE = 0.05;
 
     for (const interval of intervals) {
         const previous = merged[merged.length - 1];
