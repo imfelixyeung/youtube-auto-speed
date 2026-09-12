@@ -24,7 +24,7 @@
             var(--auto-speed-bar-height) -
             var(--auto-speed-bar-stroke)
         );
-        border-radius: 0 0 0 1.25rem;
+        border-radius: 0 0 0 calc(var(--auto-speed-bar-height) / 2);
         background-color: rgba(0, 0, 0, 0.5);
         color: #fff;
         font-family: "Roboto", "Arial", sans-serif;
