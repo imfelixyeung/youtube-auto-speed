@@ -84,8 +84,10 @@
         opacity: 0;
         transition:
             opacity 0.15s ease,
-            border-top 0.15s ease;
+            border-top 0.15s ease,
+            border-bottom 0.15s ease;
         border-top: 0 solid var(--auto-speed-gradient-from);
+        border-bottom: var(--auto-speed-bar-height) solid transparent;
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.1) 0%,
@@ -108,6 +110,7 @@
         .auto-speed-chart {
             border-top: var(--auto-speed-bar-height) solid
                 var(--auto-speed-gradient-from);
+            border-bottom: 0 solid transparent;
         }
     }
 }
