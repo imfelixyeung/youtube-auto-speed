@@ -3,7 +3,7 @@ import {
     computeSpeedAtTime,
     easeInOutCubic,
     type TimedInterval,
-} from "./speedCurve";
+} from "./speed-curve";
 import type { AutoSpeedConfig } from "./types";
 
 export type SpeedControl = {

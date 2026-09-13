@@ -6,7 +6,7 @@ import {
     type TimeSavedPoint,
     timeSavedAt,
     timeSavedForElapsed,
-} from "./timeSaved";
+} from "./time-saved";
 
 describe("timeSavedForElapsed", () => {
     test("saves nothing at 1x speed", () => {

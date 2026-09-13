@@ -4,7 +4,7 @@ import {
     captionsToIntervals,
     getCachedTimedText,
 } from "./captions";
-import { createChartOverlay } from "./chartOverlay";
+import { createChartOverlay } from "./chart-overlay";
 import {
     BOOST_SPEED,
     DEFAULT_RAMP_DURATION,
@@ -21,9 +21,9 @@ import {
     SILENT_SPEED_KEY,
     TALKING_SPEED_KEY,
 } from "./config";
-import { createSpeedControl } from "./speedControl";
-import type { TimedInterval } from "./speedCurve";
-import { formatTimeSavedRatio } from "./timeSaved";
+import { createSpeedControl } from "./speed-control";
+import type { TimedInterval } from "./speed-curve";
+import { formatTimeSavedRatio } from "./time-saved";
 import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,

@@ -8,19 +8,19 @@ import {
     PointElement,
     type ScriptableContext,
 } from "chart.js";
-import { createPlayheadPlugin, type PlayheadState } from "./playheadPlugin";
+import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
     easeInOutCubic,
     type SpeedPoint,
     sampleSpeedCurve,
     type TimedInterval,
-} from "./speedCurve";
+} from "./speed-curve";
 import {
     cumulativeTimeSaved,
     formatTimeSavedRatio,
     type TimeSavedPoint,
     timeSavedAt,
-} from "./timeSaved";
+} from "./time-saved";
 import type { AutoSpeedConfig } from "./types";
 import { cssVar } from "./utils";
 

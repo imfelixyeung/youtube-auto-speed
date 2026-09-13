@@ -1,4 +1,4 @@
-import type { TimedInterval } from "./speedCurve";
+import type { TimedInterval } from "./speed-curve";
 import type { TimedText } from "./types";
 
 /**

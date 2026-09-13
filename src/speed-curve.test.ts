@@ -5,7 +5,7 @@ import {
     easeInOutCubic,
     type SpeedCurveConfig,
     sampleSpeedCurve,
-} from "./speedCurve";
+} from "./speed-curve";
 
 const baseConfig: SpeedCurveConfig = {
     talkingSpeed: 1,

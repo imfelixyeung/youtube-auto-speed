@@ -1,4 +1,4 @@
-import type { SpeedPoint } from "./speedCurve";
+import type { SpeedPoint } from "./speed-curve";
 
 /**
  * Wall-clock time "saved" by playing `elapsedMediaSeconds` of media at
