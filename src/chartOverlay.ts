@@ -15,6 +15,12 @@ import {
     sampleSpeedCurve,
     type TimedInterval,
 } from "./speedCurve";
+import {
+    cumulativeTimeSaved,
+    formatTimeSavedRatio,
+    type TimeSavedPoint,
+    timeSavedAt,
+} from "./timeSaved";
 import type { AutoSpeedConfig } from "./types";
 import { cssVar } from "./utils";
 
@@ -30,10 +36,21 @@ export type ChartOverlay = {
     update: (data: ChartData) => void;
     refreshPlayhead: (time: number) => void;
     setBadgeText: (text: string) => void;
+    setTimeSavedText: (text: string) => void;
+    /**
+     * Cumulative seconds saved (vs 1x) if the playhead is at `time`, from the
+     * one-integration-pass cached speed curve.
+     */
+    getTimeSavedAt: (time: number) => number;
+    /**
+     * Total expected seconds saved for the whole video if it played through at
+     * the speed curve.
+     */
+    getExpectedTimeSaved: () => number;
     /**
      * Reflect whether the current video actually has captions available.
-     * Auto speed is active but has no data to drive it, so the badge is
-     * dimmed to signal the state.
+     * Auto speed is active but has no data to drive it: the badge is dimmed
+     * and the time-saved element is hidden.
      */
     setBadgeActive: (active: boolean) => void;
 };
@@ -64,6 +81,7 @@ export function createChartOverlay(
 ): ChartOverlay {
     let overlay: HTMLElement | null = null;
     let badge: HTMLElement | null = null;
+    let timeSaved: HTMLElement | null = null;
     let badgeActive = true;
     let chart: Chart | null = null;
     let fillGradient: CanvasGradient | null = null;
@@ -80,14 +98,27 @@ export function createChartOverlay(
     let overlayHovered = false;
     let cachedChartKey = "";
     let cachedChartPoints: SpeedPoint[] = [];
+    let cachedTimeSaved: TimeSavedPoint[] = [];
     let lastData: ChartData | null = null;
 
-    function createBadge(): HTMLElement {
-        const badgeEl = document.createElement("div");
-        badgeEl.className = "auto-speed-badge";
-        badgeEl.setAttribute("data-auto-speed-badge", "");
-        badgeEl.textContent = "1.00x";
-        return badgeEl;
+    function createStatusBar(): HTMLElement {
+        const statusEl = document.createElement("div");
+        statusEl.className = "auto-speed-status";
+        statusEl.setAttribute("data-auto-speed-status", "");
+
+        timeSaved = document.createElement("div");
+        timeSaved.className = "auto-speed-time-saved";
+        timeSaved.setAttribute("data-auto-speed-time-saved", "");
+        timeSaved.textContent = formatTimeSavedRatio(0, 0);
+
+        badge = document.createElement("div");
+        badge.className = "auto-speed-badge";
+        badge.setAttribute("data-auto-speed-badge", "");
+        badge.textContent = "1.00x";
+
+        statusEl.appendChild(timeSaved);
+        statusEl.appendChild(badge);
+        return statusEl;
     }
 
     function createChart(canvas: HTMLCanvasElement): Chart {
@@ -180,8 +211,7 @@ export function createChartOverlay(
             overlay.className = "auto-speed-overlay";
             overlay.setAttribute("data-auto-speed-overlay", "");
             overlay.appendChild(canvas);
-            badge = createBadge();
-            overlay.appendChild(badge);
+            overlay.appendChild(createStatusBar());
             chart = createChart(canvas);
             overlay.addEventListener("mouseenter", () => {
                 overlayHovered = true;
@@ -238,6 +268,7 @@ export function createChartOverlay(
 
             cachedChartKey = "";
             cachedChartPoints = [];
+            cachedTimeSaved = [];
             chart.data.labels = [];
             dataset.data = [];
             chart.update("none");
@@ -274,6 +305,11 @@ export function createChartOverlay(
             );
 
             dataset.data = cachedChartPoints.map((point) => point.speed);
+
+            // The cumulative saved-time curve is a side-effect of the same
+            // sampled speed curve, so it only needs this one integration pass
+            // per (captions, duration, config) change. Live lookups are O(log n).
+            cachedTimeSaved = cumulativeTimeSaved(cachedChartPoints);
 
             const yScale = chart.options.scales?.y as
                 | { min?: number; max?: number }
@@ -317,13 +353,34 @@ export function createChartOverlay(
         }
     }
 
+    function setTimeSavedText(text: string) {
+        if (timeSaved) {
+            timeSaved.textContent = text;
+        }
+    }
+
+    function getTimeSavedAt(time: number): number {
+        return timeSavedAt(cachedTimeSaved, time);
+    }
+
+    function getExpectedTimeSaved(): number {
+        const data = lastData;
+
+        if (!data?.video) {
+            return 0;
+        }
+
+        return timeSavedAt(cachedTimeSaved, data.video.duration);
+    }
+
     function setBadgeActive(active: boolean) {
-        if (!badge || active === badgeActive) {
+        if (!badge || !timeSaved || active === badgeActive) {
             return;
         }
 
         badgeActive = active;
         badge.classList.toggle("auto-speed-badge--inactive", !active);
+        timeSaved.classList.toggle("auto-speed-time-saved--hidden", !active);
     }
 
     return {
@@ -331,6 +388,9 @@ export function createChartOverlay(
         update,
         refreshPlayhead,
         setBadgeText,
+        setTimeSavedText,
+        getTimeSavedAt,
+        getExpectedTimeSaved,
         setBadgeActive,
     };
 }

@@ -23,6 +23,7 @@ import {
 } from "./config";
 import { createSpeedControl } from "./speedControl";
 import type { TimedInterval } from "./speedCurve";
+import { formatTimeSavedRatio } from "./timeSaved";
 import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,
@@ -67,6 +68,11 @@ import type {
         getIntervals: () => captionIntervals,
         onRateApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
     });
+
+    // Time saved is derived from the cached speed curve, so it only needs a
+    // lookup per frame. The DOM only updates when the displayed text actually
+    // changes.
+    let lastShownTimeSaved: string | null = null;
 
     function findVideo() {
         return document.querySelector(
@@ -128,6 +134,16 @@ import type {
         refreshPlayhead();
 
         if (video && !video.paused && !video.ended && config.enabled) {
+            const text = formatTimeSavedRatio(
+                overlay.getTimeSavedAt(video.currentTime),
+                overlay.getExpectedTimeSaved(),
+            );
+
+            if (text !== lastShownTimeSaved) {
+                lastShownTimeSaved = text;
+                overlay.setTimeSavedText(text);
+            }
+
             requestAnimationFrame(tick);
         } else {
             ticking = false;
@@ -189,6 +205,8 @@ import type {
         log("Video attached");
         video = newVideo;
         speed.set(1);
+        lastShownTimeSaved = null;
+        overlay.setTimeSavedText(formatTimeSavedRatio(0, 0));
 
         video.addEventListener("play", handlePlay);
         video.addEventListener("playing", handlePlaying);
