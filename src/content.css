@@ -24,56 +24,38 @@
             var(--auto-speed-bar-stroke)
         );
         align-items: stretch;
-        gap: 0.5rem;
-    }
-
-    .auto-speed-badge {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        gap: 1rem;
         border-radius: 0 0 0 calc(var(--auto-speed-bar-height) / 2);
         background-color: rgba(0, 0, 0, 0.5);
         color: #fff;
         font-family: "Roboto", "Arial", sans-serif;
+        transition:
+            background-color 0.15s ease,
+            border-radius 0.15s ease;
+        font-weight: 500;
+        line-height: normal;
+        pointer-events: auto;
+        touch-action: none;
+        user-select: none;
         font-size: 1rem;
-        font-weight: 500;
-        line-height: normal;
-        pointer-events: auto;
-        user-select: none;
-        display: grid;
-        place-items: center;
-        transition:
-            background-color 0.15s ease,
-            border-radius 0.15s ease;
-        touch-action: none;
-    }
+        padding-left: 1rem;
+        padding-right: 1rem;
+        flex-direction: row;
+        justify-content: center;
 
-    .auto-speed-time-saved {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-        border-radius: 0 0 calc(var(--auto-speed-bar-height) / 2)
-            calc(var(--auto-speed-bar-height) / 2);
-        background-color: rgba(0, 0, 0, 0.5);
-        color: #fff;
-        font-family: "Roboto", "Arial", sans-serif;
-        font-size: 0.875rem;
-        font-weight: 500;
-        line-height: normal;
-        pointer-events: auto;
-        user-select: none;
-        display: grid;
-        place-items: center;
-        transition:
-            background-color 0.15s ease,
-            border-radius 0.15s ease;
-        touch-action: none;
-    }
+        .auto-speed-badge,
+        .auto-speed-time-saved {
+            display: grid;
+            place-items: center;
+        }
 
-    .auto-speed-time-saved--hidden {
-        display: none;
-    }
+        .auto-speed-time-saved--hidden {
+            display: none;
+        }
 
-    .auto-speed-badge--inactive {
-        color: #737373;
+        .auto-speed-badge--inactive {
+            color: #737373;
+        }
     }
 
     .auto-speed-chart {
@@ -103,8 +85,7 @@
             opacity: 1;
         }
 
-        .auto-speed-badge,
-        .auto-speed-time-saved {
+        .auto-speed-status {
             background-color: transparent;
             border-radius: 0 0 0 0;
         }
