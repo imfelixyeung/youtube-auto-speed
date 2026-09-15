@@ -23,6 +23,7 @@ Configured from the extension popup and synced across devices via `chrome.storag
 | Setting           | Default | Range    | Notes                                    |
 | ----------------- | ------- | -------- | ---------------------------------------- |
 | Enable auto speed | on      | —        | Global on/off                            |
+| Always show speed chart | off | —    | Keep the speed chart visible at all times |
 | Filter out [...]  | on      | —        | Treat bracketed labels (e.g. `[music]`) as non-speech |
 | Filter out (...)  | off     | —        | Treat parenthesised asides as non-speech |
 | Ramp duration     | 5s      | 0.5–300s | Time to ease between speeds              |

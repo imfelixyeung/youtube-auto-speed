@@ -6,7 +6,9 @@ import {
 } from "./captions";
 import { createChartOverlay } from "./chart-overlay";
 import {
+    ALWAYS_SHOW_CHART_KEY,
     BOOST_SPEED,
+    DEFAULT_ALWAYS_SHOW_CHART,
     DEFAULT_FILTER_PARENTHESES,
     DEFAULT_FILTER_SQUARE_BRACKETS,
     DEFAULT_RAMP_DURATION,
@@ -41,6 +43,7 @@ import type {
         talkingSpeedBoost: number;
     } = {
         enabled: true,
+        alwaysShowChart: DEFAULT_ALWAYS_SHOW_CHART,
         rampDurationSeconds: DEFAULT_RAMP_DURATION,
         talkingSpeed: DEFAULT_TALKING_SPEED,
         talkingSpeedConfig: DEFAULT_TALKING_SPEED,
@@ -116,7 +119,23 @@ import type {
         const player = document.querySelector<HTMLElement>("#movie_player");
 
         overlay.attach(player, config.enabled);
+        applyAlwaysShowChart();
         updateBadgeCaptionState();
+    }
+
+    /**
+     * Mirror the "always show chart" setting onto `#movie_player` so the
+     * overlay CSS can force the chart visible regardless of player state.
+     */
+    function applyAlwaysShowChart() {
+        const player = document.querySelector<HTMLElement>("#movie_player");
+
+        if (player) {
+            player.classList.toggle(
+                "auto-speed-always-chart",
+                config.alwaysShowChart,
+            );
+        }
     }
 
     function updateChart() {
@@ -316,6 +335,16 @@ import type {
         log(`Auto speed ${config.enabled ? "enabled" : "disabled"}`);
     }
 
+    function setAlwaysShowChart(value: boolean) {
+        if (value === config.alwaysShowChart) {
+            return;
+        }
+
+        config.alwaysShowChart = value;
+        applyAlwaysShowChart();
+        log(`Always show chart ${config.alwaysShowChart ? "on" : "off"}`);
+    }
+
     function setRampDuration(seconds: number) {
         const clamped = Math.min(
             MAX_RAMP_DURATION,
@@ -465,6 +494,7 @@ import type {
     chrome.storage.sync.get(
         [
             ENABLED_KEY,
+            ALWAYS_SHOW_CHART_KEY,
             RAMP_DURATION_KEY,
             TALKING_SPEED_KEY,
             SILENT_SPEED_KEY,
@@ -474,6 +504,10 @@ import type {
         (result) => {
             if (typeof result[ENABLED_KEY] === "boolean") {
                 setEnabled(result[ENABLED_KEY]);
+            }
+
+            if (typeof result[ALWAYS_SHOW_CHART_KEY] === "boolean") {
+                setAlwaysShowChart(result[ALWAYS_SHOW_CHART_KEY]);
             }
 
             if (typeof result[RAMP_DURATION_KEY] === "number") {
@@ -508,6 +542,15 @@ import type {
 
         if (enabledChange && typeof enabledChange.newValue === "boolean") {
             setEnabled(enabledChange.newValue);
+        }
+
+        const alwaysShowChartChange = changes[ALWAYS_SHOW_CHART_KEY];
+
+        if (
+            alwaysShowChartChange &&
+            typeof alwaysShowChartChange.newValue === "boolean"
+        ) {
+            setAlwaysShowChart(alwaysShowChartChange.newValue);
         }
 
         const rampChange = changes[RAMP_DURATION_KEY];

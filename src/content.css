@@ -97,7 +97,8 @@
     }
 
     &:not(.ytp-autohide),
-    &.paused-mode .auto-speed-overlay:hover {
+    &.paused-mode .auto-speed-overlay:hover,
+    &.auto-speed-always-chart {
         .auto-speed-chart {
             opacity: 1;
         }

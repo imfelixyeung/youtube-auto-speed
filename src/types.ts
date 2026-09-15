@@ -1,5 +1,6 @@
 export type AutoSpeedConfig = {
     enabled: boolean;
+    alwaysShowChart: boolean;
     rampDurationSeconds: number;
     talkingSpeed: number;
     silentSpeed: number;

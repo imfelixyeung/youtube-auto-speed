@@ -1,4 +1,6 @@
 import {
+    ALWAYS_SHOW_CHART_KEY,
+    DEFAULT_ALWAYS_SHOW_CHART,
     DEFAULT_FILTER_PARENTHESES,
     DEFAULT_FILTER_SQUARE_BRACKETS,
     DEFAULT_RAMP_DURATION,
@@ -29,6 +31,10 @@ const parenFilterToggle = document.getElementById(
     "filter-parens-toggle",
 ) as HTMLInputElement;
 
+const alwaysShowChartToggle = document.getElementById(
+    "always-show-chart-toggle",
+) as HTMLInputElement;
+
 const rampInput = document.getElementById("ramp-duration") as HTMLInputElement;
 
 const talkingInput = document.getElementById(
@@ -55,6 +61,7 @@ function clamp(value: number, min: number, max: number) {
 chrome.storage.sync.get(
     [
         ENABLED_KEY,
+        ALWAYS_SHOW_CHART_KEY,
         RAMP_DURATION_KEY,
         TALKING_SPEED_KEY,
         SILENT_SPEED_KEY,
@@ -63,6 +70,11 @@ chrome.storage.sync.get(
     ],
     (result) => {
         toggle.checked = result[ENABLED_KEY] !== false;
+
+        alwaysShowChartToggle.checked =
+            typeof result[ALWAYS_SHOW_CHART_KEY] === "boolean"
+                ? result[ALWAYS_SHOW_CHART_KEY]
+                : DEFAULT_ALWAYS_SHOW_CHART;
 
         bracketFilterToggle.checked =
             typeof result[FILTER_BRACKETS_KEY] === "boolean"
@@ -111,6 +123,12 @@ chrome.storage.sync.get(
 
 toggle.addEventListener("change", () => {
     chrome.storage.sync.set({ [ENABLED_KEY]: toggle.checked });
+});
+
+alwaysShowChartToggle.addEventListener("change", () => {
+    chrome.storage.sync.set({
+        [ALWAYS_SHOW_CHART_KEY]: alwaysShowChartToggle.checked,
+    });
 });
 
 bracketFilterToggle.addEventListener("change", () => {

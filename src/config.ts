@@ -1,4 +1,5 @@
 export const ENABLED_KEY = "enabled";
+export const ALWAYS_SHOW_CHART_KEY = "alwaysShowChart";
 export const RAMP_DURATION_KEY = "rampDuration";
 export const TALKING_SPEED_KEY = "talkingSpeed";
 export const SILENT_SPEED_KEY = "silentSpeed";
@@ -19,6 +20,8 @@ export const MAX_SILENT_SPEED = 16;
 
 export const DEFAULT_FILTER_SQUARE_BRACKETS = true;
 export const DEFAULT_FILTER_PARENTHESES = false;
+
+export const DEFAULT_ALWAYS_SHOW_CHART = false;
 
 export const SPEED_STEP = 0.05;
 

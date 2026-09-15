@@ -332,7 +332,7 @@ export function createChartOverlay(
             return;
         }
 
-        if (!overlayHovered) {
+        if (!overlayHovered && !lastData?.config.alwaysShowChart) {
             return;
         }
 
