@@ -18,7 +18,7 @@ test:
 	bun test
 
 zip: | build
-	zip -r $(ZIP) manifest.json $(OUT_DIR)
+	zip -r $(ZIP) manifest.json $(OUT_DIR) assets
 
 clean:
 	rm -rf $(OUT_DIR) $(ZIP)

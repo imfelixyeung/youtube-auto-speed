@@ -6,7 +6,8 @@
     "manifest_version": 3,
     "action": {
         "default_popup": "dist/popup.html",
-        "default_title": "YouTube Auto Speed"
+        "default_title": "YouTube Auto Speed",
+        "default_icon": "assets/auto-speed.png"
     },
     "content_scripts": [
         {
