@@ -213,6 +213,115 @@ describe("captionsToIntervals", () => {
         expect(captionsToIntervals(data)).toEqual([{ start: 5, end: 6 }]);
     });
 
+    test('treats "(music)" as speech by default', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: "(music)" }],
+                },
+            ],
+        };
+
+        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+    });
+
+    test('ignores "(music)" labels when the parenthesised filter is on', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: "(music)" }],
+                },
+            ],
+        };
+
+        expect(
+            captionsToIntervals(data, {
+                filterSquareBrackets: true,
+                filterParentheses: true,
+            }),
+        ).toEqual([]);
+    });
+
+    test('keeps "[music]" as speech when the square-bracket filter is off', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: "[music]" }],
+                },
+            ],
+        };
+
+        expect(
+            captionsToIntervals(data, {
+                filterSquareBrackets: false,
+                filterParentheses: false,
+            }),
+        ).toEqual([{ start: 1, end: 3 }]);
+    });
+
+    test("strips parenthesised asides but keeps the speech around them", () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 2000,
+                    segs: [{ utf8: "hello (aside)" }],
+                },
+            ],
+        };
+
+        expect(
+            captionsToIntervals(data, {
+                filterSquareBrackets: true,
+                filterParentheses: true,
+            }),
+        ).toEqual([{ start: 1, end: 3 }]);
+    });
+
+    test('treats "(music) [applause]" as non-speech with both filters on', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: "(music) [applause]" }],
+                },
+            ],
+        };
+
+        expect(
+            captionsToIntervals(data, {
+                filterSquareBrackets: true,
+                filterParentheses: true,
+            }),
+        ).toEqual([]);
+    });
+
+    test('treats ">>> (music)" as non-speech with the parenthesised filter on', () => {
+        const data: TimedText = {
+            events: [
+                {
+                    tStartMs: 1000,
+                    dDurationMs: 1000,
+                    segs: [{ utf8: ">>> (music)" }],
+                },
+            ],
+        };
+
+        expect(
+            captionsToIntervals(data, {
+                filterSquareBrackets: true,
+                filterParentheses: true,
+            }),
+        ).toEqual([]);
+    });
+
     test("joins segments before checking for non-speech labels", () => {
         const data: TimedText = {
             events: [

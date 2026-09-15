@@ -3,6 +3,8 @@ export type AutoSpeedConfig = {
     rampDurationSeconds: number;
     talkingSpeed: number;
     silentSpeed: number;
+    filterSquareBrackets: boolean;
+    filterParentheses: boolean;
 };
 
 export type AutoSpeedCaptionsEvent = CustomEvent<{

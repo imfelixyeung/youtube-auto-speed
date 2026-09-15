@@ -82,24 +82,41 @@ export function mergeIntervals(intervals: TimedInterval[]): TimedInterval[] {
 }
 
 /**
- * Non-speech caption fragments (labels, markers, etc.) that are
- * stripped out of caption text before deciding whether it contains
- * speech. To add a new label, append a regex here.
+ * Which non-speech caption fragments (labels, markers, etc.) to strip out
+ * of caption text before deciding whether it contains speech.
  */
-const NON_SPEECH_PATTERNS: RegExp[] = [
-    /\[music\]/gi,
-    /\[applause\]/gi,
-    /\[laughter\]/gi,
-    />/g,
-];
+export type NonSpeechOptions = {
+    filterSquareBrackets: boolean;
+    filterParentheses: boolean;
+};
 
-function isNonSpeech(text: string): boolean {
-    const remaining = NON_SPEECH_PATTERNS.reduce(
-        (result, pattern) => result.replace(pattern, ""),
-        text,
-    );
+const DEFAULT_NON_SPEECH_OPTIONS: NonSpeechOptions = {
+    filterSquareBrackets: true,
+    filterParentheses: false,
+};
 
-    return remaining.trim() === "";
+/**
+ * "> " sign-along caption markers that never count as speech, regardless of
+ * the toggleable bracket filters.
+ */
+const MARKER_PATTERN = />/g;
+
+function stripNonSpeech(text: string, options: NonSpeechOptions): string {
+    let remaining = text;
+
+    if (options.filterSquareBrackets) {
+        remaining = remaining.replace(/\[.*?\]/g, "");
+    }
+
+    if (options.filterParentheses) {
+        remaining = remaining.replace(/\(.*?\)/g, "");
+    }
+
+    return remaining.replace(MARKER_PATTERN, "");
+}
+
+function isNonSpeech(text: string, options: NonSpeechOptions): boolean {
+    return stripNonSpeech(text, options).trim() === "";
 }
 
 /**
@@ -107,7 +124,10 @@ function isNonSpeech(text: string): boolean {
  * intervals (in seconds). Empty and non-speech caption events are
  * ignored.
  */
-export function captionsToIntervals(data: TimedText | null): TimedInterval[] {
+export function captionsToIntervals(
+    data: TimedText | null,
+    options: NonSpeechOptions = DEFAULT_NON_SPEECH_OPTIONS,
+): TimedInterval[] {
     if (!data || !Array.isArray(data.events)) {
         return [];
     }
@@ -129,10 +149,10 @@ export function captionsToIntervals(data: TimedText | null): TimedInterval[] {
 
         const text = event.segs
             .map((seg) => seg.utf8 ?? "")
-            .filter((seg) => seg?.trim() && !isNonSpeech(seg))
+            .filter((seg) => seg?.trim() && !isNonSpeech(seg, options))
             .join("");
 
-        if (!text.trim() || isNonSpeech(text)) {
+        if (!text.trim() || isNonSpeech(text, options)) {
             continue;
         }
 

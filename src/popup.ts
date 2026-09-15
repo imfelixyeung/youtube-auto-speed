@@ -1,8 +1,12 @@
 import {
+    DEFAULT_FILTER_PARENTHESES,
+    DEFAULT_FILTER_SQUARE_BRACKETS,
     DEFAULT_RAMP_DURATION,
     DEFAULT_SILENT_SPEED,
     DEFAULT_TALKING_SPEED,
     ENABLED_KEY,
+    FILTER_BRACKETS_KEY,
+    FILTER_PARENS_KEY,
     MAX_RAMP_DURATION,
     MAX_SILENT_SPEED,
     MAX_TALKING_SPEED,
@@ -16,6 +20,14 @@ import {
 } from "./config";
 
 const toggle = document.getElementById("enabled-toggle") as HTMLInputElement;
+
+const bracketFilterToggle = document.getElementById(
+    "filter-brackets-toggle",
+) as HTMLInputElement;
+
+const parenFilterToggle = document.getElementById(
+    "filter-parens-toggle",
+) as HTMLInputElement;
 
 const rampInput = document.getElementById("ramp-duration") as HTMLInputElement;
 
@@ -41,9 +53,26 @@ function clamp(value: number, min: number, max: number) {
 }
 
 chrome.storage.sync.get(
-    [ENABLED_KEY, RAMP_DURATION_KEY, TALKING_SPEED_KEY, SILENT_SPEED_KEY],
+    [
+        ENABLED_KEY,
+        RAMP_DURATION_KEY,
+        TALKING_SPEED_KEY,
+        SILENT_SPEED_KEY,
+        FILTER_BRACKETS_KEY,
+        FILTER_PARENS_KEY,
+    ],
     (result) => {
         toggle.checked = result[ENABLED_KEY] !== false;
+
+        bracketFilterToggle.checked =
+            typeof result[FILTER_BRACKETS_KEY] === "boolean"
+                ? result[FILTER_BRACKETS_KEY]
+                : DEFAULT_FILTER_SQUARE_BRACKETS;
+
+        parenFilterToggle.checked =
+            typeof result[FILTER_PARENS_KEY] === "boolean"
+                ? result[FILTER_PARENS_KEY]
+                : DEFAULT_FILTER_PARENTHESES;
 
         rampInput.value = String(
             typeof result[RAMP_DURATION_KEY] === "number"
@@ -82,6 +111,18 @@ chrome.storage.sync.get(
 
 toggle.addEventListener("change", () => {
     chrome.storage.sync.set({ [ENABLED_KEY]: toggle.checked });
+});
+
+bracketFilterToggle.addEventListener("change", () => {
+    chrome.storage.sync.set({
+        [FILTER_BRACKETS_KEY]: bracketFilterToggle.checked,
+    });
+});
+
+parenFilterToggle.addEventListener("change", () => {
+    chrome.storage.sync.set({
+        [FILTER_PARENS_KEY]: parenFilterToggle.checked,
+    });
 });
 
 rampInput.addEventListener("change", () => {

@@ -7,10 +7,14 @@ import {
 import { createChartOverlay } from "./chart-overlay";
 import {
     BOOST_SPEED,
+    DEFAULT_FILTER_PARENTHESES,
+    DEFAULT_FILTER_SQUARE_BRACKETS,
     DEFAULT_RAMP_DURATION,
     DEFAULT_SILENT_SPEED,
     DEFAULT_TALKING_SPEED,
     ENABLED_KEY,
+    FILTER_BRACKETS_KEY,
+    FILTER_PARENS_KEY,
     MAX_RAMP_DURATION,
     MAX_SILENT_SPEED,
     MAX_TALKING_SPEED,
@@ -42,6 +46,8 @@ import type {
         talkingSpeedConfig: DEFAULT_TALKING_SPEED,
         talkingSpeedBoost: BOOST_SPEED,
         silentSpeed: DEFAULT_SILENT_SPEED,
+        filterSquareBrackets: DEFAULT_FILTER_SQUARE_BRACKETS,
+        filterParentheses: DEFAULT_FILTER_PARENTHESES,
     };
     let video: HTMLVideoElement | null = null;
     let captionIntervals: TimedInterval[] = [];
@@ -228,7 +234,10 @@ import type {
     }
 
     function applyCaptions(data: TimedText, source: "cache" | "network") {
-        captionIntervals = captionsToIntervals(data);
+        captionIntervals = captionsToIntervals(data, {
+            filterSquareBrackets: config.filterSquareBrackets,
+            filterParentheses: config.filterParentheses,
+        });
         captionVersion++;
         log(`Loaded ${captionIntervals.length} caption intervals (${source})`);
         log(captionIntervals.slice(0, 10));
@@ -366,6 +375,33 @@ import type {
         log(`Silent speed: ${clamped}x`);
     }
 
+    function setNonSpeechFilter(
+        filterSquareBrackets: boolean,
+        filterParentheses: boolean,
+    ) {
+        if (
+            filterSquareBrackets === config.filterSquareBrackets &&
+            filterParentheses === config.filterParentheses
+        ) {
+            return;
+        }
+
+        config.filterSquareBrackets = filterSquareBrackets;
+        config.filterParentheses = filterParentheses;
+
+        // Re-process the cached raw timedtext so current intervals reflect
+        // the new filters immediately.
+        const cached = getCachedTimedText(currentVideoId ?? "");
+
+        if (cached) {
+            applyCaptions(cached, "cache");
+        }
+
+        log(
+            `Non-speech filter: [${filterSquareBrackets ? "on" : "off"}], (${filterParentheses ? "on" : "off"})`,
+        );
+    }
+
     window.addEventListener("AUTO_SPEED_CAPTIONS", (event) => {
         const { videoId, data } = (event as AutoSpeedCaptionsEvent).detail;
 
@@ -427,7 +463,14 @@ import type {
     requestTick();
 
     chrome.storage.sync.get(
-        [ENABLED_KEY, RAMP_DURATION_KEY, TALKING_SPEED_KEY, SILENT_SPEED_KEY],
+        [
+            ENABLED_KEY,
+            RAMP_DURATION_KEY,
+            TALKING_SPEED_KEY,
+            SILENT_SPEED_KEY,
+            FILTER_BRACKETS_KEY,
+            FILTER_PARENS_KEY,
+        ],
         (result) => {
             if (typeof result[ENABLED_KEY] === "boolean") {
                 setEnabled(result[ENABLED_KEY]);
@@ -444,6 +487,15 @@ import type {
             if (typeof result[SILENT_SPEED_KEY] === "number") {
                 setSilentSpeed(result[SILENT_SPEED_KEY]);
             }
+
+            setNonSpeechFilter(
+                typeof result[FILTER_BRACKETS_KEY] === "boolean"
+                    ? result[FILTER_BRACKETS_KEY]
+                    : DEFAULT_FILTER_SQUARE_BRACKETS,
+                typeof result[FILTER_PARENS_KEY] === "boolean"
+                    ? result[FILTER_PARENS_KEY]
+                    : DEFAULT_FILTER_PARENTHESES,
+            );
         },
     );
 
@@ -474,6 +526,23 @@ import type {
 
         if (silentChange && typeof silentChange.newValue === "number") {
             setSilentSpeed(silentChange.newValue);
+        }
+
+        const bracketChange = changes[FILTER_BRACKETS_KEY];
+        const parenChange = changes[FILTER_PARENS_KEY];
+
+        if (
+            (bracketChange && typeof bracketChange.newValue === "boolean") ||
+            (parenChange && typeof parenChange.newValue === "boolean")
+        ) {
+            setNonSpeechFilter(
+                typeof bracketChange?.newValue === "boolean"
+                    ? bracketChange.newValue
+                    : config.filterSquareBrackets,
+                typeof parenChange?.newValue === "boolean"
+                    ? parenChange.newValue
+                    : config.filterParentheses,
+            );
         }
     });
 

@@ -23,6 +23,8 @@ Configured from the extension popup and synced across devices via `chrome.storag
 | Setting           | Default | Range    | Notes                                    |
 | ----------------- | ------- | -------- | ---------------------------------------- |
 | Enable auto speed | on      | —        | Global on/off                            |
+| Filter out [...]  | on      | —        | Treat bracketed labels (e.g. `[music]`) as non-speech |
+| Filter out (...)  | off     | —        | Treat parenthesised asides as non-speech |
 | Ramp duration     | 5s      | 0.5–300s | Time to ease between speeds              |
 | Talking speed     | 1x      | 0.25–4x  | Speed while someone is speaking          |
 | Silent speed      | 2x      | 0.25–16x | Speed during silence (must be > talking) |
