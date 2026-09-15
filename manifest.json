@@ -1,13 +1,19 @@
 {
     "$schema": "https://www.schemastore.org/chrome-manifest.json",
-    "name": "YouTube Auto Speed",
+    "name": "Dynamic Speed for YouTube",
     "description": "Automatically speeds up YouTube when nobody is speaking",
     "version": "0.0.1",
     "manifest_version": 3,
     "action": {
         "default_popup": "dist/popup.html",
-        "default_title": "YouTube Auto Speed",
-        "default_icon": "assets/auto-speed.png"
+        "default_title": "Dynamic Speed for YouTube",
+        "default_icon": {
+            "16": "assets/auto-speed-x16.png",
+            "24": "assets/auto-speed-x24.png",
+            "32": "assets/auto-speed-x32.png",
+            "128": "assets/auto-speed-x128.png",
+            "600": "assets/auto-speed.png"
+        }
     },
     "content_scripts": [
         {

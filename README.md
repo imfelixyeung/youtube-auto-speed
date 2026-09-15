@@ -1,4 +1,4 @@
-# YouTube Auto Speed!
+# Dynamic Speed for YouTube
 
 A Chrome extension that automatically speeds up YouTube videos while nobody is speaking, and cruises back down to normal speed when speech starts.
 
