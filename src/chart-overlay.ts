@@ -327,12 +327,21 @@ export function createChartOverlay(
         }
     }
 
+    function isChartVisible(): boolean {
+        if (overlayHovered || lastData?.config.alwaysShowChart) {
+            return true;
+        }
+
+        const player = overlay?.closest("#movie_player");
+        return player ? !player.classList.contains("ytp-autohide") : false;
+    }
+
     function refreshPlayhead(time: number) {
         if (!chart || !overlay || overlay.style.display === "none") {
             return;
         }
 
-        if (!overlayHovered && !lastData?.config.alwaysShowChart) {
+        if (!isChartVisible()) {
             return;
         }
 
