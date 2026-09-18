@@ -56,19 +56,27 @@ import type {
     let captionIntervals: TimedInterval[] = [];
     let captionVersion = 0;
     let currentVideoId: string | null = null;
+    let x2speed: {
+        overlay: HTMLElement;
+        observer: MutationObserver;
+    } | null = null;
 
     function log(...args: unknown[]) {
         console.debug("[Auto Speed]", ...args);
     }
 
+    const onBoostStart = () => {
+        log(`Boosting speed to ${config.talkingSpeedBoost}x`);
+        setTalkingSpeed(config.talkingSpeedBoost, true);
+    };
+    const onBoostEnd = () => {
+        log(`Un-boosting speed to ${config.talkingSpeedConfig}x`);
+        setTalkingSpeed(config.talkingSpeedConfig);
+    };
+
     const overlay = createChartOverlay(log, {
-        onBoostStart: () => {
-            log(`Boosting speed to ${config.talkingSpeedBoost}`);
-            setTalkingSpeed(config.talkingSpeedBoost, true);
-        },
-        onBoostEnd: () => {
-            setTalkingSpeed(config.talkingSpeedConfig);
-        },
+        onBoostStart,
+        onBoostEnd,
     });
 
     const speed = createSpeedControl({
@@ -227,6 +235,8 @@ import type {
         }
 
         detachVideo();
+        unlistenX2Speed();
+
         log("Video attached");
         video = newVideo;
         speed.set(1);
@@ -242,11 +252,51 @@ import type {
         video.addEventListener("durationchange", updateChart);
     }
 
+    function unlistenX2Speed() {
+        if (x2speed === null) {
+            return;
+        }
+        x2speed.observer.disconnect();
+        x2speed = null;
+    }
+
+    /**
+     * This is to respect YouTube's hold to x2 speed feature.
+     */
+    function listenX2Speed() {
+        const overlay = document.querySelector(
+            ".ytp-overlay.ytp-speedmaster-overlay",
+        );
+        if (overlay === null || !(overlay instanceof HTMLElement)) {
+            return;
+        }
+
+        const observer = new MutationObserver((mutationList) => {
+            for (const mutation of mutationList) {
+                if (mutation.type !== "attributes" || x2speed === null) {
+                    continue;
+                }
+
+                if (x2speed.overlay.style.display === "none") {
+                    onBoostEnd();
+                } else {
+                    onBoostStart();
+                }
+            }
+        });
+        observer.observe(overlay, { attributeFilter: ["style"] });
+        x2speed = {
+            overlay,
+            observer,
+        };
+    }
+
     function checkForVideo() {
         const newVideo = findVideo();
 
         if (newVideo && newVideo !== video) {
             attachVideo(newVideo);
+            listenX2Speed();
         }
 
         attachOverlay();
