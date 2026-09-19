@@ -27,6 +27,7 @@ import { cssVar } from "./utils";
 export type ChartData = {
     video: HTMLVideoElement | null;
     captionIntervals: TimedInterval[];
+    smartSkipIntervals: TimedInterval[];
     captionVersion: number;
     config: AutoSpeedConfig;
 };
@@ -289,8 +290,12 @@ export function createChartOverlay(
 
         if (cacheKey !== cachedChartKey) {
             cachedChartPoints = sampleSpeedCurve(
-                data.captionIntervals,
                 {
+                    captions: data.captionIntervals,
+                    smartSkips: data.smartSkipIntervals,
+                },
+                {
+                    smartSkipSpeed: data.config.smartSkipSpeed,
                     talkingSpeed: data.config.talkingSpeed,
                     silentSpeed: data.config.silentSpeed,
                     rampDurationSeconds: data.config.rampDurationSeconds,

@@ -3,6 +3,11 @@ export abstract class Interceptor {
     public enabled: boolean = true;
 
     /**
+     * Run any initialisation logic.
+     */
+    public init(): void {}
+
+    /**
      * Should the interceptor intercept the URL.
      */
     public abstract match(url: string): boolean;

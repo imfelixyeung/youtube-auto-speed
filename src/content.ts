@@ -13,6 +13,7 @@ import {
     DEFAULT_FILTER_SQUARE_BRACKETS,
     DEFAULT_RAMP_DURATION,
     DEFAULT_SILENT_SPEED,
+    DEFAULT_SMART_SKIP_SPEED,
     DEFAULT_TALKING_SPEED,
     ENABLED_KEY,
     FILTER_BRACKETS_KEY,
@@ -27,6 +28,12 @@ import {
     SILENT_SPEED_KEY,
     TALKING_SPEED_KEY,
 } from "./config";
+import {
+    cacheSmartSkips,
+    getCachedSmartSkips,
+    parseFromVideoData,
+    type SmartSkipIntervals,
+} from "./smart-skip";
 import { createSpeedControl } from "./speed-control";
 import type { TimedInterval } from "./speed-curve";
 import { formatTimeSavedRatio } from "./time-saved";
@@ -34,6 +41,7 @@ import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,
     AutoSpeedConfigChangedEvent,
+    AutoSpeedVideoDataEvent,
     TimedText,
 } from "./types";
 
@@ -51,9 +59,11 @@ import type {
         silentSpeed: DEFAULT_SILENT_SPEED,
         filterSquareBrackets: DEFAULT_FILTER_SQUARE_BRACKETS,
         filterParentheses: DEFAULT_FILTER_PARENTHESES,
+        smartSkipSpeed: DEFAULT_SMART_SKIP_SPEED,
     };
     let video: HTMLVideoElement | null = null;
     let captionIntervals: TimedInterval[] = [];
+    let smartSkipIntervals: SmartSkipIntervals = [];
     let captionVersion = 0;
     let currentVideoId: string | null = null;
     let x2speed: {
@@ -82,7 +92,8 @@ import type {
     const speed = createSpeedControl({
         getVideo: () => video,
         getConfig: () => config,
-        getIntervals: () => captionIntervals,
+        getCaptionIntervals: () => captionIntervals,
+        getSmartSkipIntervals: () => smartSkipIntervals,
         onRateApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
     });
 
@@ -147,7 +158,13 @@ import type {
     }
 
     function updateChart() {
-        overlay.update({ video, captionIntervals, captionVersion, config });
+        overlay.update({
+            video,
+            smartSkipIntervals,
+            captionIntervals,
+            captionVersion,
+            config,
+        });
     }
 
     function updateBadgeCaptionState() {
@@ -318,6 +335,14 @@ import type {
         updateBadgeCaptionState();
     }
 
+    function applySmartSkips(data: SmartSkipIntervals) {
+        smartSkipIntervals = data;
+        log(`Loaded ${data.length} smart skip intervals`, data);
+        updateSpeed();
+        updateChart();
+        updateBadgeCaptionState();
+    }
+
     /**
      * YouTube is an SPA, so a navigation can swap videos without any caption
      * request for the new one (e.g. it has no subtitles). Drop stale intervals
@@ -332,6 +357,11 @@ import type {
 
         currentVideoId = nextVideoId;
         captionIntervals = [];
+
+        const smartSkips = getCachedSmartSkips(currentVideoId ?? "");
+        if (smartSkips) {
+            applySmartSkips(smartSkips);
+        }
 
         // Reuse previously-intercepted captions for this video: YouTube
         // sometimes skips the timedtext request for a video it has already
@@ -498,6 +528,17 @@ import type {
         }
 
         applyCaptions(data, "network");
+    });
+
+    window.addEventListener("AUTO_SPEED_GET_WATCH", (event) => {
+        const { videoId, data } = (event as AutoSpeedVideoDataEvent).detail;
+        if (getCachedSmartSkips(videoId)) return;
+        const smartSkips = parseFromVideoData(data);
+        cacheSmartSkips(videoId, smartSkips);
+        if (videoId !== currentVideoId) {
+            return;
+        }
+        applySmartSkips(smartSkips);
     });
 
     let ticking = false;

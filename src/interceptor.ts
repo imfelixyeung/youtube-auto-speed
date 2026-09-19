@@ -1,7 +1,11 @@
+import { GetWatchInterceptor } from "./interceptors/get-watch";
 import { TimedTextInterceptor } from "./interceptors/timed-text";
 
 (() => {
-    const interceptors = [new TimedTextInterceptor()];
+    const interceptors = [
+        new TimedTextInterceptor(),
+        new GetWatchInterceptor(),
+    ];
 
     // ============================================================
     // FETCH
@@ -102,4 +106,6 @@ import { TimedTextInterceptor } from "./interceptors/timed-text";
     };
 
     console.debug("[Auto Speed] Network interceptor installed");
+
+    interceptors.forEach((i) => void i.init());
 })();

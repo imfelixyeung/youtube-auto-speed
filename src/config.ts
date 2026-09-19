@@ -18,6 +18,8 @@ export const DEFAULT_SILENT_SPEED = 2;
 export const MIN_SILENT_SPEED = 0.25;
 export const MAX_SILENT_SPEED = 16;
 
+export const DEFAULT_SMART_SKIP_SPEED = 2;
+
 export const DEFAULT_FILTER_SQUARE_BRACKETS = true;
 export const DEFAULT_FILTER_PARENTHESES = false;
 

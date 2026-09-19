@@ -5,14 +5,18 @@ import {
     easeInOutCubic,
     type SpeedCurveConfig,
     sampleSpeedCurve,
+    type TimedInterval,
 } from "./speed-curve";
 
 const baseConfig: SpeedCurveConfig = {
+    smartSkipSpeed: 3,
     talkingSpeed: 1,
     silentSpeed: 2,
     rampDurationSeconds: 1,
     easing: easeInOutCubic,
 };
+
+const wrap = (captions: TimedInterval[]) => ({ captions, smartSkips: [] });
 
 describe("clamp01", () => {
     test("clamps values into [0, 1]", () => {
@@ -40,26 +44,26 @@ describe("computeSpeedAtTime", () => {
     const intervals = [{ start: 0, end: 1 }];
 
     test("returns talking speed while a caption is on screen", () => {
-        expect(computeSpeedAtTime(0.5, intervals, baseConfig)).toBe(1);
+        expect(computeSpeedAtTime(0.5, wrap(intervals), baseConfig)).toBe(1);
     });
 
     test("returns talking speed when there are no captions", () => {
-        expect(computeSpeedAtTime(10, [], baseConfig)).toBe(1);
+        expect(computeSpeedAtTime(10, wrap([]), baseConfig)).toBe(1);
     });
 
     test("ramps up between talking and silent speed after speech ends", () => {
-        const speed = computeSpeedAtTime(1.5, intervals, baseConfig);
+        const speed = computeSpeedAtTime(1.5, wrap(intervals), baseConfig);
 
         expect(speed).toBeGreaterThan(1);
         expect(speed).toBeLessThan(2);
     });
 
     test("reaches silent speed one full ramp after speech ends", () => {
-        expect(computeSpeedAtTime(2, intervals, baseConfig)).toBe(2);
+        expect(computeSpeedAtTime(2, wrap(intervals), baseConfig)).toBe(2);
     });
 
     test("returns silent speed far from any caption", () => {
-        expect(computeSpeedAtTime(5, intervals, baseConfig)).toBe(2);
+        expect(computeSpeedAtTime(5, wrap(intervals), baseConfig)).toBe(2);
     });
 
     test("reaches talking speed exactly when the next caption starts", () => {
@@ -68,7 +72,7 @@ describe("computeSpeedAtTime", () => {
             { start: 3, end: 4 },
         ];
 
-        expect(computeSpeedAtTime(3, twoIntervals, baseConfig)).toBe(1);
+        expect(computeSpeedAtTime(3, wrap(twoIntervals), baseConfig)).toBe(1);
     });
 });
 
@@ -76,7 +80,7 @@ describe("sampleSpeedCurve", () => {
     test("samples the curve every step, inclusive of the end", () => {
         const intervals = [{ start: 1, end: 2 }];
 
-        const points = sampleSpeedCurve(intervals, baseConfig, 2, 0.5);
+        const points = sampleSpeedCurve(wrap(intervals), baseConfig, 2, 0.5);
 
         expect(points.map((point) => point.time)).toEqual([0, 0.5, 1, 1.5, 2]);
     });
@@ -84,7 +88,7 @@ describe("sampleSpeedCurve", () => {
     test("samples the correct speed at each point", () => {
         const intervals = [{ start: 1, end: 2 }];
 
-        const points = sampleSpeedCurve(intervals, baseConfig, 2, 0.5);
+        const points = sampleSpeedCurve(wrap(intervals), baseConfig, 2, 0.5);
 
         expect(points[0]?.speed).toBe(2);
         expect(points[2]?.speed).toBe(1);
