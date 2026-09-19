@@ -10,6 +10,7 @@ import {
 } from "chart.js";
 import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
+    easeInOutCubic,
     type SpeedPoint,
     sampleSpeedCurve,
     type TimedIntervalWithSpeed,
@@ -289,9 +290,13 @@ export function createChartOverlay(
         if (cacheKey !== cachedChartKey) {
             cachedChartPoints = sampleSpeedCurve(
                 data.intervals,
-                data.config.talkingSpeed,
                 duration,
                 duration / MAX_CHART_SAMPLES,
+                {
+                    fallbackSpeed: data.config.talkingSpeed,
+                    rampDuration: data.config.rampDurationSeconds,
+                    easingFn: easeInOutCubic,
+                },
             );
 
             chart.data.labels = cachedChartPoints.map((point) =>

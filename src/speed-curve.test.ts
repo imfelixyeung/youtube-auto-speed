@@ -7,7 +7,11 @@ import {
     type TimedInterval,
 } from "./speed-curve";
 
-const baseConfig = 1;
+const baseConfig = {
+    fallbackSpeed: 1,
+    rampDuration: 1,
+    easingFn: easeInOutCubic,
+};
 
 const wrap = (intervals: TimedInterval[]) =>
     intervals.map((i) => ({ ...i, speed: 1 }));
@@ -74,7 +78,7 @@ describe("sampleSpeedCurve", () => {
     test("samples the curve every step, inclusive of the end", () => {
         const intervals = [{ start: 1, end: 2 }];
 
-        const points = sampleSpeedCurve(wrap(intervals), baseConfig, 2, 0.5);
+        const points = sampleSpeedCurve(wrap(intervals), 2, 0.5, baseConfig);
 
         expect(points.map((point) => point.time)).toEqual([0, 0.5, 1, 1.5, 2]);
     });
@@ -82,7 +86,7 @@ describe("sampleSpeedCurve", () => {
     test("samples the correct speed at each point", () => {
         const intervals = [{ start: 1, end: 2 }];
 
-        const points = sampleSpeedCurve(wrap(intervals), baseConfig, 2, 0.5);
+        const points = sampleSpeedCurve(wrap(intervals), 2, 0.5, baseConfig);
 
         expect(points[0]?.speed).toBe(2);
         expect(points[2]?.speed).toBe(1);

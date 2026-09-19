@@ -242,6 +242,16 @@ import type {
         speed.set(1);
     }
 
+    function handleDurationChange() {
+        if (!video) {
+            return;
+        }
+        speedTracks.get("normal").intervals = [
+            { start: 0, end: video.duration },
+        ];
+        updateChart();
+    }
+
     function detachVideo() {
         if (!video) {
             return;
@@ -253,7 +263,7 @@ import type {
         video.removeEventListener("ended", handleEnded);
         video.removeEventListener("seeked", updateSpeed);
         video.removeEventListener("loadedmetadata", updateChart);
-        video.removeEventListener("durationchange", updateChart);
+        video.removeEventListener("durationchange", handleDurationChange);
 
         video = null;
     }
@@ -278,7 +288,7 @@ import type {
         video.addEventListener("ended", handleEnded);
         video.addEventListener("seeked", updateSpeed);
         video.addEventListener("loadedmetadata", updateChart);
-        video.addEventListener("durationchange", updateChart);
+        video.addEventListener("durationchange", handleDurationChange);
     }
 
     function unlistenX2Speed() {

@@ -7,14 +7,6 @@ export type TimedIntervalWithSpeed = TimedInterval & { speed: number };
 
 export type EasingFn = (t: number) => number;
 
-export type SpeedCurveConfig = {
-    smartSkipSpeed: number;
-    talkingSpeed: number;
-    silentSpeed: number;
-    rampDurationSeconds: number;
-    easing: EasingFn;
-};
-
 export function clamp01(value: number) {
     return Math.min(1, Math.max(0, value));
 }
@@ -35,7 +27,7 @@ export type Neighbors = {
     next: TimedIntervalWithSpeed | null;
 };
 
-export function findSpeechNeighbors(
+export function findNeighbors(
     time: number,
     intervals: TimedIntervalWithSpeed[],
 ) {
@@ -66,20 +58,78 @@ export function findSpeechNeighbors(
 }
 
 /**
- * Desired playback rate at a given video time.
+ * Desired playback rate at a given video time with smooth easing.
  */
 export function computeSpeedAtTime(
     time: number,
     intervals: TimedIntervalWithSpeed[],
-    fallbackSpeed: number,
+    config: {
+        fallbackSpeed: number;
+        rampDuration: number;
+        easingFn: EasingFn;
+    },
 ): number {
+    const { fallbackSpeed, rampDuration, easingFn } = config;
     if (intervals.length === 0) {
-        return fallbackSpeed;
+        return config.fallbackSpeed;
     }
 
-    const { current } = findSpeechNeighbors(time, intervals);
+    const { current, previous, next } = findNeighbors(time, intervals);
+
     if (current) {
-        return current.speed;
+        const prevSpeed = previous ? previous.speed : fallbackSpeed;
+        const nextSpeed = next ? next.speed : fallbackSpeed;
+
+        let speed = current.speed;
+
+        // Ramp IN from previous speed (only if previous speed is lower)
+        if (prevSpeed < current.speed && rampDuration > 0) {
+            const rampEnd = current.start + rampDuration;
+            if (time < rampEnd) {
+                const progress = (time - current.start) / rampDuration;
+                const easedProgress = easingFn(progress);
+                const rampSpeed =
+                    prevSpeed + easedProgress * (current.speed - prevSpeed);
+                speed = Math.min(speed, rampSpeed);
+            }
+        }
+
+        // Ramp OUT to next speed (only if next speed is lower)
+        if (nextSpeed < current.speed && rampDuration > 0) {
+            const rampStart = current.end - rampDuration;
+            if (time >= rampStart) {
+                const progress = (time - rampStart) / rampDuration;
+                const easedProgress = easingFn(progress);
+                const rampSpeed =
+                    current.speed - easedProgress * (current.speed - nextSpeed);
+                speed = Math.min(speed, rampSpeed);
+            }
+        }
+
+        return speed;
+    }
+
+    // When time falls outside any active interval (in fallback space)
+    const prevSpeed = previous ? previous.speed : fallbackSpeed;
+    const nextSpeed = next ? next.speed : fallbackSpeed;
+
+    // Transition out of previous interval if previous speed was higher
+    if (previous && prevSpeed > fallbackSpeed && rampDuration > 0) {
+        if (time < previous.end + rampDuration) {
+            const progress = (time - previous.end) / rampDuration;
+            const easedProgress = easingFn(progress);
+            return prevSpeed - easedProgress * (prevSpeed - fallbackSpeed);
+        }
+    }
+
+    // Transition into next interval if next speed is higher
+    if (next && nextSpeed > fallbackSpeed && rampDuration > 0) {
+        if (time >= next.start - rampDuration) {
+            const progress =
+                (time - (next.start - rampDuration)) / rampDuration;
+            const easedProgress = easingFn(progress);
+            return fallbackSpeed + easedProgress * (nextSpeed - fallbackSpeed);
+        }
     }
 
     return fallbackSpeed;
@@ -95,16 +145,20 @@ export type SpeedPoint = {
  */
 export function sampleSpeedCurve(
     intervals: TimedIntervalWithSpeed[],
-    fallbackSpeed: number,
     durationSeconds: number,
     stepSeconds = 0.1,
+    config: {
+        fallbackSpeed: number;
+        rampDuration: number;
+        easingFn: EasingFn;
+    },
 ): SpeedPoint[] {
     const points: SpeedPoint[] = [];
 
     for (let time = 0; time <= durationSeconds; time += stepSeconds) {
         points.push({
             time,
-            speed: computeSpeedAtTime(time, intervals, fallbackSpeed),
+            speed: computeSpeedAtTime(time, intervals, config),
         });
     }
 
