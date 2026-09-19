@@ -1,30 +1,52 @@
-export const ENABLED_KEY = "enabled";
-export const ALWAYS_SHOW_CHART_KEY = "alwaysShowChart";
-export const RAMP_DURATION_KEY = "rampDuration";
-export const TALKING_SPEED_KEY = "talkingSpeed";
-export const SILENT_SPEED_KEY = "silentSpeed";
-export const FILTER_BRACKETS_KEY = "filterSquareBrackets";
-export const FILTER_PARENS_KEY = "filterParentheses";
+import { BooleanConfig } from "./config/types/boolean";
+import { NumberConfig } from "./config/types/number";
 
-export const DEFAULT_RAMP_DURATION = 5;
-export const MIN_RAMP_DURATION = 0.5;
-export const MAX_RAMP_DURATION = 300;
+export const ENABLED = new BooleanConfig({
+    storageKey: "enabled",
+    defaultValue: true,
+});
 
-export const DEFAULT_TALKING_SPEED = 1;
-export const MIN_TALKING_SPEED = 0.25;
-export const MAX_TALKING_SPEED = 4;
+export const SPEED_STEP = 0.05;
 
-export const DEFAULT_SILENT_SPEED = 2;
-export const MIN_SILENT_SPEED = 0.25;
-export const MAX_SILENT_SPEED = 16;
+export const RAMP_DURATION = new NumberConfig({
+    storageKey: "rampDuration",
+    defaultValue: 5,
+    min: 0.5,
+    max: 300,
+    step: SPEED_STEP,
+});
+
+export const TALKING_SPEED = new NumberConfig({
+    storageKey: "talkingSpeed",
+    defaultValue: 1,
+    min: 0.25,
+    max: 4,
+    step: SPEED_STEP,
+});
+
+export const SILENT_SPEED = new NumberConfig({
+    storageKey: "silentSpeed",
+    defaultValue: 2,
+    min: 0.25,
+    max: 16,
+    step: SPEED_STEP,
+});
 
 export const DEFAULT_SMART_SKIP_SPEED = 3;
 
-export const DEFAULT_FILTER_SQUARE_BRACKETS = true;
-export const DEFAULT_FILTER_PARENTHESES = false;
+export const FILTER_SQUARE_BRACKETS = new BooleanConfig({
+    storageKey: "filterSquareBrackets",
+    defaultValue: true,
+});
 
-export const DEFAULT_ALWAYS_SHOW_CHART = false;
+export const FILTER_PARENTHESES = new BooleanConfig({
+    storageKey: "filterParentheses",
+    defaultValue: false,
+});
 
-export const SPEED_STEP = 0.05;
+export const ALWAYS_SHOW_CHART = new BooleanConfig({
+    storageKey: "alwaysShowChart",
+    defaultValue: false,
+});
 
 export const BOOST_SPEED = 2.0;

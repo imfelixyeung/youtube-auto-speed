@@ -6,27 +6,15 @@ import {
 } from "./captions";
 import { createChartOverlay } from "./chart-overlay";
 import {
-    ALWAYS_SHOW_CHART_KEY,
+    ALWAYS_SHOW_CHART,
     BOOST_SPEED,
-    DEFAULT_ALWAYS_SHOW_CHART,
-    DEFAULT_FILTER_PARENTHESES,
-    DEFAULT_FILTER_SQUARE_BRACKETS,
-    DEFAULT_RAMP_DURATION,
-    DEFAULT_SILENT_SPEED,
     DEFAULT_SMART_SKIP_SPEED,
-    DEFAULT_TALKING_SPEED,
-    ENABLED_KEY,
-    FILTER_BRACKETS_KEY,
-    FILTER_PARENS_KEY,
-    MAX_RAMP_DURATION,
-    MAX_SILENT_SPEED,
-    MAX_TALKING_SPEED,
-    MIN_RAMP_DURATION,
-    MIN_SILENT_SPEED,
-    MIN_TALKING_SPEED,
-    RAMP_DURATION_KEY,
-    SILENT_SPEED_KEY,
-    TALKING_SPEED_KEY,
+    ENABLED,
+    FILTER_PARENTHESES,
+    FILTER_SQUARE_BRACKETS,
+    RAMP_DURATION,
+    SILENT_SPEED,
+    TALKING_SPEED,
 } from "./config";
 import {
     cacheSmartSkips,
@@ -51,25 +39,25 @@ import type {
         talkingSpeedBoost: number;
     } = {
         enabled: true,
-        alwaysShowChart: DEFAULT_ALWAYS_SHOW_CHART,
-        rampDurationSeconds: DEFAULT_RAMP_DURATION,
-        talkingSpeed: DEFAULT_TALKING_SPEED,
-        talkingSpeedConfig: DEFAULT_TALKING_SPEED,
+        alwaysShowChart: ALWAYS_SHOW_CHART.defaultValue,
+        rampDurationSeconds: RAMP_DURATION.defaultValue,
+        talkingSpeed: TALKING_SPEED.defaultValue,
+        talkingSpeedConfig: TALKING_SPEED.defaultValue,
         talkingSpeedBoost: BOOST_SPEED,
-        silentSpeed: DEFAULT_SILENT_SPEED,
-        filterSquareBrackets: DEFAULT_FILTER_SQUARE_BRACKETS,
-        filterParentheses: DEFAULT_FILTER_PARENTHESES,
+        silentSpeed: SILENT_SPEED.defaultValue,
+        filterSquareBrackets: FILTER_SQUARE_BRACKETS.defaultValue,
+        filterParentheses: FILTER_PARENTHESES.defaultValue,
         smartSkipSpeed: DEFAULT_SMART_SKIP_SPEED,
     };
     let video: HTMLVideoElement | null = null;
     const speedTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", DEFAULT_TALKING_SPEED, []),
+            track: new Track("normal", TALKING_SPEED.defaultValue, []),
         },
         {
             name: "silent",
-            track: new Track("silent", DEFAULT_SILENT_SPEED, []),
+            track: new Track("silent", SILENT_SPEED.defaultValue, []),
         },
         {
             name: "smartSkip",
@@ -458,64 +446,33 @@ import type {
     }
 
     function setRampDuration(seconds: number) {
-        const clamped = Math.min(
-            MAX_RAMP_DURATION,
-            Math.max(MIN_RAMP_DURATION, seconds),
-        );
-
-        if (clamped === config.rampDurationSeconds) {
+        if (seconds === config.rampDurationSeconds) {
             return;
         }
 
-        config.rampDurationSeconds = clamped;
+        config.rampDurationSeconds = seconds;
         updateSpeed();
         updateChart();
-        log(`Ramp duration: ${clamped}s`);
+        log(`Ramp duration: ${seconds}s`);
     }
 
     function setTalkingSpeed(speed: number, isBoost = false) {
-        const clamped = Math.min(
-            MAX_TALKING_SPEED,
-            Math.max(MIN_TALKING_SPEED, speed),
-        );
-
-        if (clamped >= config.silentSpeed) {
-            return;
-        }
-
-        if (clamped === config.talkingSpeed) {
-            return;
-        }
-
-        config.talkingSpeed = clamped;
+        config.talkingSpeed = speed;
         if (!isBoost) {
-            config.talkingSpeedConfig = clamped;
+            config.talkingSpeedConfig = speed;
         }
-        speedTracks.get("normal").speed = clamped;
+        speedTracks.get("normal").speed = speed;
         updateSpeed();
         updateChart();
-        log(`Talking speed: ${clamped}x`);
+        log(`Talking speed: ${speed}x`);
     }
 
     function setSilentSpeed(speed: number) {
-        const clamped = Math.min(
-            MAX_SILENT_SPEED,
-            Math.max(MIN_SILENT_SPEED, speed),
-        );
-
-        if (clamped <= config.talkingSpeed) {
-            return;
-        }
-
-        if (clamped === config.silentSpeed) {
-            return;
-        }
-
-        config.silentSpeed = clamped;
-        speedTracks.get("silent").speed = clamped;
+        config.silentSpeed = speed;
+        speedTracks.get("silent").speed = speed;
         updateSpeed();
         updateChart();
-        log(`Silent speed: ${clamped}x`);
+        log(`Silent speed: ${speed}x`);
     }
 
     function setNonSpeechFilter(
@@ -616,103 +573,17 @@ import type {
     checkForVideo();
     requestTick();
 
-    chrome.storage.sync.get(
-        [
-            ENABLED_KEY,
-            ALWAYS_SHOW_CHART_KEY,
-            RAMP_DURATION_KEY,
-            TALKING_SPEED_KEY,
-            SILENT_SPEED_KEY,
-            FILTER_BRACKETS_KEY,
-            FILTER_PARENS_KEY,
-        ],
-        (result) => {
-            if (typeof result[ENABLED_KEY] === "boolean") {
-                setEnabled(result[ENABLED_KEY]);
-            }
-
-            if (typeof result[ALWAYS_SHOW_CHART_KEY] === "boolean") {
-                setAlwaysShowChart(result[ALWAYS_SHOW_CHART_KEY]);
-            }
-
-            if (typeof result[RAMP_DURATION_KEY] === "number") {
-                setRampDuration(result[RAMP_DURATION_KEY]);
-            }
-
-            if (typeof result[TALKING_SPEED_KEY] === "number") {
-                setTalkingSpeed(result[TALKING_SPEED_KEY]);
-            }
-
-            if (typeof result[SILENT_SPEED_KEY] === "number") {
-                setSilentSpeed(result[SILENT_SPEED_KEY]);
-            }
-
-            setNonSpeechFilter(
-                typeof result[FILTER_BRACKETS_KEY] === "boolean"
-                    ? result[FILTER_BRACKETS_KEY]
-                    : DEFAULT_FILTER_SQUARE_BRACKETS,
-                typeof result[FILTER_PARENS_KEY] === "boolean"
-                    ? result[FILTER_PARENS_KEY]
-                    : DEFAULT_FILTER_PARENTHESES,
-            );
-        },
+    ENABLED.listen(setEnabled);
+    ALWAYS_SHOW_CHART.listen(setAlwaysShowChart);
+    RAMP_DURATION.listen(setRampDuration);
+    TALKING_SPEED.listen(setTalkingSpeed);
+    SILENT_SPEED.listen(setSilentSpeed);
+    FILTER_SQUARE_BRACKETS.listen((v) =>
+        setNonSpeechFilter(v, FILTER_PARENTHESES.value),
     );
-
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName !== "sync") {
-            return;
-        }
-
-        const enabledChange = changes[ENABLED_KEY];
-
-        if (enabledChange && typeof enabledChange.newValue === "boolean") {
-            setEnabled(enabledChange.newValue);
-        }
-
-        const alwaysShowChartChange = changes[ALWAYS_SHOW_CHART_KEY];
-
-        if (
-            alwaysShowChartChange &&
-            typeof alwaysShowChartChange.newValue === "boolean"
-        ) {
-            setAlwaysShowChart(alwaysShowChartChange.newValue);
-        }
-
-        const rampChange = changes[RAMP_DURATION_KEY];
-
-        if (rampChange && typeof rampChange.newValue === "number") {
-            setRampDuration(rampChange.newValue);
-        }
-
-        const talkingChange = changes[TALKING_SPEED_KEY];
-
-        if (talkingChange && typeof talkingChange.newValue === "number") {
-            setTalkingSpeed(talkingChange.newValue);
-        }
-
-        const silentChange = changes[SILENT_SPEED_KEY];
-
-        if (silentChange && typeof silentChange.newValue === "number") {
-            setSilentSpeed(silentChange.newValue);
-        }
-
-        const bracketChange = changes[FILTER_BRACKETS_KEY];
-        const parenChange = changes[FILTER_PARENS_KEY];
-
-        if (
-            (bracketChange && typeof bracketChange.newValue === "boolean") ||
-            (parenChange && typeof parenChange.newValue === "boolean")
-        ) {
-            setNonSpeechFilter(
-                typeof bracketChange?.newValue === "boolean"
-                    ? bracketChange.newValue
-                    : config.filterSquareBrackets,
-                typeof parenChange?.newValue === "boolean"
-                    ? parenChange.newValue
-                    : config.filterParentheses,
-            );
-        }
-    });
+    FILTER_PARENTHESES.listen((v) =>
+        setNonSpeechFilter(FILTER_SQUARE_BRACKETS.value, v),
+    );
 
     log("Initialized");
 })();

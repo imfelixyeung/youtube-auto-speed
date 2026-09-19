@@ -1,3 +1,5 @@
+import { clamp } from "./utils/clamp";
+
 export type TimedInterval = {
     start: number;
     end: number;
@@ -8,7 +10,7 @@ export type TimedIntervalWithSpeed = TimedInterval & { speed: number };
 export type EasingFn = (t: number) => number;
 
 export function clamp01(value: number) {
-    return Math.min(1, Math.max(0, value));
+    return clamp(value, 0, 1);
 }
 
 /**
