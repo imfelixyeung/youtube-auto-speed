@@ -34,8 +34,8 @@ import {
     parseFromVideoData,
     type SmartSkipIntervals,
 } from "./smart-skip";
+import { Track, Tracks } from "./speed/tracks";
 import { createSpeedControl } from "./speed-control";
-import type { TimedInterval } from "./speed-curve";
 import { formatTimeSavedRatio } from "./time-saved";
 import type {
     AutoSpeedCaptionsEvent,
@@ -62,8 +62,20 @@ import type {
         smartSkipSpeed: DEFAULT_SMART_SKIP_SPEED,
     };
     let video: HTMLVideoElement | null = null;
-    let silentIntervals: TimedInterval[] = [];
-    let smartSkipIntervals: TimedInterval[] = [];
+    const speedTracks = new Tracks([
+        {
+            name: "normal",
+            track: new Track("normal", DEFAULT_TALKING_SPEED, []),
+        },
+        {
+            name: "silent",
+            track: new Track("silent", DEFAULT_SILENT_SPEED, []),
+        },
+        {
+            name: "smartSkip",
+            track: new Track("smartSkip", DEFAULT_SMART_SKIP_SPEED, []),
+        },
+    ]);
     let captionVersion = 0;
     let currentVideoId: string | null = null;
     let x2speed: {
@@ -92,8 +104,7 @@ import type {
     const speed = createSpeedControl({
         getVideo: () => video,
         getConfig: () => config,
-        getSilentIntervals: () => silentIntervals,
-        getSmartSkipIntervals: () => smartSkipIntervals,
+        getIntervals: () => speedTracks.flatten().intervals,
         onRateApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
     });
 
@@ -160,8 +171,7 @@ import type {
     function updateChart() {
         overlay.update({
             video,
-            smartSkipIntervals,
-            silentIntervals,
+            intervals: speedTracks.flatten().intervals,
             captionVersion,
             config,
         });
@@ -170,7 +180,9 @@ import type {
     function updateBadgeCaptionState() {
         // Gray out the badge when the extension is active but the current
         // video has no captions to drive the auto speed.
-        overlay.setBadgeActive(config.enabled && silentIntervals.length > 0);
+        overlay.setBadgeActive(
+            config.enabled && speedTracks.get("silent").intervals.length > 0,
+        );
     }
 
     function refreshPlayhead() {
@@ -320,7 +332,7 @@ import type {
     }
 
     function applyCaptions(data: TimedText, source: "cache" | "network") {
-        silentIntervals = captionsToSilentIntervals(
+        speedTracks.get("silent").intervals = captionsToSilentIntervals(
             data,
             video?.duration ?? 0,
             {
@@ -328,9 +340,12 @@ import type {
                 filterParentheses: config.filterParentheses,
             },
         );
+        speedTracks.flatten(true);
         captionVersion++;
-        log(`Loaded ${silentIntervals.length} caption intervals (${source})`);
-        log(silentIntervals.slice(0, 10));
+        log(
+            `Loaded ${speedTracks.get("silent").intervals.length} caption intervals (${source})`,
+        );
+        log(speedTracks.get("silent").intervals.slice(0, 10));
 
         // Immediately recalculate because new captions probably mean a new
         // video or language.
@@ -340,7 +355,8 @@ import type {
     }
 
     function applySmartSkips(data: SmartSkipIntervals) {
-        smartSkipIntervals = data;
+        speedTracks.get("smartSkip").intervals = data;
+        speedTracks.flatten(true);
         log(`Loaded ${data.length} smart skip intervals`, data);
         updateSpeed();
         updateChart();
@@ -360,7 +376,8 @@ import type {
         }
 
         currentVideoId = nextVideoId;
-        silentIntervals = [];
+        speedTracks.get("smartSkip").intervals = [];
+        speedTracks.flatten(true);
 
         const smartSkips = getCachedSmartSkips(currentVideoId ?? "");
         if (smartSkips) {

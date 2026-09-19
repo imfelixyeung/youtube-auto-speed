@@ -1,9 +1,5 @@
 import { SPEED_STEP } from "./config";
-import {
-    computeSpeedAtTime,
-    easeInOutCubic,
-    type TimedInterval,
-} from "./speed-curve";
+import { computeSpeedAtTime, type TimedIntervalWithSpeed } from "./speed-curve";
 import type { AutoSpeedConfig } from "./types";
 
 export type SpeedControl = {
@@ -20,17 +16,10 @@ export type SpeedControl = {
 export function createSpeedControl(opts: {
     getVideo: () => HTMLVideoElement | null;
     getConfig: () => AutoSpeedConfig;
-    getSilentIntervals: () => TimedInterval[];
-    getSmartSkipIntervals: () => TimedInterval[];
+    getIntervals: () => TimedIntervalWithSpeed[];
     onRateApplied: (rounded: number) => void;
 }): SpeedControl {
-    const {
-        getVideo,
-        getConfig,
-        getSilentIntervals: getCaptionIntervals,
-        getSmartSkipIntervals,
-        onRateApplied,
-    } = opts;
+    const { getVideo, getConfig, getIntervals, onRateApplied } = opts;
 
     function roundToNearest05(value: number) {
         return Math.round(value / SPEED_STEP) * SPEED_STEP;
@@ -69,17 +58,8 @@ export function createSpeedControl(opts: {
 
         const desired = computeSpeedAtTime(
             video.currentTime,
-            {
-                silent: getCaptionIntervals(),
-                smartSkips: getSmartSkipIntervals(),
-            },
-            {
-                smartSkipSpeed: config.smartSkipSpeed,
-                talkingSpeed: config.talkingSpeed,
-                silentSpeed: config.silentSpeed,
-                rampDurationSeconds: config.rampDurationSeconds,
-                easing: easeInOutCubic,
-            },
+            getIntervals(),
+            config.talkingSpeed,
         );
 
         set(desired);

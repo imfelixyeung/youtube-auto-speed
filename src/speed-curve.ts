@@ -3,10 +3,7 @@ export type TimedInterval = {
     end: number;
 };
 
-export type TimedIntervals = {
-    silent: TimedInterval[];
-    smartSkips: TimedInterval[];
-};
+export type TimedIntervalWithSpeed = TimedInterval & { speed: number };
 
 export type EasingFn = (t: number) => number;
 
@@ -33,77 +30,39 @@ export const easeInOutCubic: EasingFn = (t) => {
 };
 
 export type Neighbors = {
-    active: boolean;
-    previousEnd: number;
-    nextStart: number;
+    current: TimedIntervalWithSpeed | null;
+    previous: TimedIntervalWithSpeed | null;
+    next: TimedIntervalWithSpeed | null;
 };
 
-/**
- * Locate whether `time` is inside a speech interval, plus the nearest
- * surrounding speech boundaries (`previousEnd` / `nextStart`).
- *
- * `previousEnd` is `-Infinity` before any speech, `nextStart` is `Infinity`
- * after the last speech, so ramps behave sensibly at the edges of a video.
- */
 export function findSpeechNeighbors(
     time: number,
-    intervals: TimedInterval[],
-): Neighbors {
-    if (intervals.length === 0) {
-        return { active: false, previousEnd: -Infinity, nextStart: Infinity };
-    }
+    intervals: TimedIntervalWithSpeed[],
+) {
+    let current: TimedIntervalWithSpeed | null = null;
+    let previous: TimedIntervalWithSpeed | null = null;
+    let next: TimedIntervalWithSpeed | null = null;
 
-    // Binary search for the last interval whose start time is <= `time`.
-    let low = 0;
-    let high = intervals.length - 1;
-    let found = -1;
+    for (let i = 0; i < intervals.length; i++) {
+        const interval = intervals[i];
+        if (interval === undefined) continue;
 
-    while (low <= high) {
-        const mid = (low + high) >> 1;
-        const start = intervals[mid]?.start;
+        if (interval.start <= time && time < interval.end) {
+            current = interval;
+            previous = intervals[i - 1] ?? null;
+            next = intervals[i + 1] ?? null;
+            break;
+        }
 
-        if (start !== undefined && start <= time) {
-            found = mid;
-            low = mid + 1;
-        } else {
-            high = mid - 1;
+        if (interval.end <= time) {
+            previous = interval;
+        } else if (interval.start > time) {
+            next = interval;
+            break; // Since intervals are sorted, we don't need to look further
         }
     }
 
-    // `time` is before the first interval.
-    if (found === -1) {
-        return {
-            active: false,
-            previousEnd: -Infinity,
-            nextStart: intervals[0]?.start ?? Infinity,
-        };
-    }
-
-    const current = intervals[found];
-
-    if (!current) {
-        return {
-            active: false,
-            previousEnd: -Infinity,
-            nextStart: Infinity,
-        };
-    }
-
-    const previousEnd =
-        found > 0 ? (intervals[found - 1]?.end ?? -Infinity) : -Infinity;
-
-    if (time <= current.end) {
-        return { active: true, previousEnd, nextStart: current.start };
-    }
-
-    return {
-        active: false,
-        previousEnd: current.end,
-        nextStart:
-            found + 1 < intervals.length
-                ? (intervals[found + 1]?.start ?? Infinity)
-                : Infinity,
-    };
+    return { current, previous, next };
 }
 
 /**
@@ -111,25 +70,19 @@ export function findSpeechNeighbors(
  */
 export function computeSpeedAtTime(
     time: number,
-    intervals: TimedIntervals,
-    config: SpeedCurveConfig,
+    intervals: TimedIntervalWithSpeed[],
+    fallbackSpeed: number,
 ): number {
-    if (intervals.silent.length === 0 && intervals.smartSkips.length === 0) {
-        return config.talkingSpeed;
+    if (intervals.length === 0) {
+        return fallbackSpeed;
     }
 
-    const smartSkips = findSpeechNeighbors(time, intervals.smartSkips);
-    if (smartSkips.active) {
-        return config.smartSkipSpeed;
+    const { current } = findSpeechNeighbors(time, intervals);
+    if (current) {
+        return current.speed;
     }
 
-    const silent = findSpeechNeighbors(time, intervals.silent);
-
-    if (silent.active) {
-        return config.silentSpeed;
-    }
-
-    return config.talkingSpeed;
+    return fallbackSpeed;
 }
 
 export type SpeedPoint = {
@@ -141,8 +94,8 @@ export type SpeedPoint = {
  * Sample the speed curve so it can be rendered as a line graph later.
  */
 export function sampleSpeedCurve(
-    intervals: TimedIntervals,
-    config: SpeedCurveConfig,
+    intervals: TimedIntervalWithSpeed[],
+    fallbackSpeed: number,
     durationSeconds: number,
     stepSeconds = 0.1,
 ): SpeedPoint[] {
@@ -151,7 +104,7 @@ export function sampleSpeedCurve(
     for (let time = 0; time <= durationSeconds; time += stepSeconds) {
         points.push({
             time,
-            speed: computeSpeedAtTime(time, intervals, config),
+            speed: computeSpeedAtTime(time, intervals, fallbackSpeed),
         });
     }
 

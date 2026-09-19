@@ -3,20 +3,14 @@ import {
     clamp01,
     computeSpeedAtTime,
     easeInOutCubic,
-    type SpeedCurveConfig,
     sampleSpeedCurve,
     type TimedInterval,
 } from "./speed-curve";
 
-const baseConfig: SpeedCurveConfig = {
-    smartSkipSpeed: 3,
-    talkingSpeed: 1,
-    silentSpeed: 2,
-    rampDurationSeconds: 1,
-    easing: easeInOutCubic,
-};
+const baseConfig = 1;
 
-const wrap = (silent: TimedInterval[]) => ({ silent, smartSkips: [] });
+const wrap = (intervals: TimedInterval[]) =>
+    intervals.map((i) => ({ ...i, speed: 1 }));
 
 describe("clamp01", () => {
     test("clamps values into [0, 1]", () => {

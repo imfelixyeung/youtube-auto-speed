@@ -10,10 +10,9 @@ import {
 } from "chart.js";
 import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
-    easeInOutCubic,
     type SpeedPoint,
     sampleSpeedCurve,
-    type TimedInterval,
+    type TimedIntervalWithSpeed,
 } from "./speed-curve";
 import {
     cumulativeTimeSaved,
@@ -26,8 +25,7 @@ import { cssVar } from "./utils";
 
 export type ChartData = {
     video: HTMLVideoElement | null;
-    silentIntervals: TimedInterval[];
-    smartSkipIntervals: TimedInterval[];
+    intervals: TimedIntervalWithSpeed[];
     captionVersion: number;
     config: AutoSpeedConfig;
 };
@@ -262,7 +260,7 @@ export function createChartOverlay(
         playhead.duration = duration;
         playhead.time = data.video.currentTime;
 
-        if (data.silentIntervals.length === 0 || duration <= 0) {
+        if (data.intervals.length === 0 || duration <= 0) {
             if (cachedChartKey === "") {
                 return;
             }
@@ -290,17 +288,8 @@ export function createChartOverlay(
 
         if (cacheKey !== cachedChartKey) {
             cachedChartPoints = sampleSpeedCurve(
-                {
-                    silent: data.silentIntervals,
-                    smartSkips: data.smartSkipIntervals,
-                },
-                {
-                    smartSkipSpeed: data.config.smartSkipSpeed,
-                    talkingSpeed: data.config.talkingSpeed,
-                    silentSpeed: data.config.silentSpeed,
-                    rampDurationSeconds: data.config.rampDurationSeconds,
-                    easing: easeInOutCubic,
-                },
+                data.intervals,
+                data.config.talkingSpeed,
                 duration,
                 duration / MAX_CHART_SAMPLES,
             );
