@@ -1,14 +1,14 @@
 import type { TimedInterval, TimedIntervalWithSpeed } from "../speed-curve";
 
-export class Track<I extends TimedInterval> {
+export class Track<I extends TimedInterval = TimedInterval> {
     constructor(
         public name: string,
         public speed: number,
         public intervals: I[],
     ) {}
 
-    public static empty() {
-        return new Track("", 0, []);
+    public static empty<I extends TimedInterval = TimedInterval>() {
+        return new Track<I>("", 0, []);
     }
 
     public addInterval(interval: I) {
