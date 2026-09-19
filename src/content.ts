@@ -289,6 +289,7 @@ import type {
         video.addEventListener("seeked", updateSpeed);
         video.addEventListener("loadedmetadata", updateChart);
         video.addEventListener("durationchange", handleDurationChange);
+        handleDurationChange();
     }
 
     function unlistenX2Speed() {
