@@ -491,6 +491,7 @@ import type {
         if (!isBoost) {
             config.talkingSpeedConfig = clamped;
         }
+        speedTracks.get("normal").speed = clamped;
         updateSpeed();
         updateChart();
         log(`Talking speed: ${clamped}x`);
@@ -511,6 +512,7 @@ import type {
         }
 
         config.silentSpeed = clamped;
+        speedTracks.get("silent").speed = clamped;
         updateSpeed();
         updateChart();
         log(`Silent speed: ${clamped}x`);
