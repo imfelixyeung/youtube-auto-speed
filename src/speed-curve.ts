@@ -4,7 +4,7 @@ export type TimedInterval = {
 };
 
 export type TimedIntervals = {
-    captions: TimedInterval[];
+    silent: TimedInterval[];
     smartSkips: TimedInterval[];
 };
 
@@ -108,22 +108,13 @@ export function findSpeechNeighbors(
 
 /**
  * Desired playback rate at a given video time.
- *
- * Talking              -> `talkingSpeed` (1x).
- * After talking stops  -> ease up to `silentSpeed` (2x) over
- *                         `rampDurationSeconds`.
- * Until the next talk  -> ease back down to `talkingSpeed`, reaching it
- *                         exactly when talking starts.
- *
- * The two ramps overlap when a gap is shorter than twice the ramp
- * duration; the minimum of both constraints keeps the curve continuous.
  */
 export function computeSpeedAtTime(
     time: number,
     intervals: TimedIntervals,
     config: SpeedCurveConfig,
 ): number {
-    if (intervals.captions.length === 0 && intervals.smartSkips.length === 0) {
+    if (intervals.silent.length === 0 && intervals.smartSkips.length === 0) {
         return config.talkingSpeed;
     }
 
@@ -132,26 +123,13 @@ export function computeSpeedAtTime(
         return config.smartSkipSpeed;
     }
 
-    const captions = findSpeechNeighbors(time, intervals.captions);
+    const silent = findSpeechNeighbors(time, intervals.silent);
 
-    if (captions.active) {
-        return config.talkingSpeed;
+    if (silent.active) {
+        return config.silentSpeed;
     }
 
-    const { previousEnd, nextStart } = captions;
-
-    const ramp = config.rampDurationSeconds;
-    const range = config.silentSpeed - config.talkingSpeed;
-
-    // Ease away from the previous speech.
-    const upProgress = clamp01((time - previousEnd) / ramp);
-    const upSpeed = config.talkingSpeed + range * config.easing(upProgress);
-
-    // Ease toward the next speech.
-    const downProgress = clamp01((nextStart - time) / ramp);
-    const downSpeed = config.talkingSpeed + range * config.easing(downProgress);
-
-    return Math.min(upSpeed, downSpeed);
+    return config.talkingSpeed;
 }
 
 export type SpeedPoint = {

@@ -1,7 +1,7 @@
 import "./content.css";
 import {
     cacheTimedText,
-    captionsToIntervals,
+    captionsToSilentIntervals,
     getCachedTimedText,
 } from "./captions";
 import { createChartOverlay } from "./chart-overlay";
@@ -62,8 +62,8 @@ import type {
         smartSkipSpeed: DEFAULT_SMART_SKIP_SPEED,
     };
     let video: HTMLVideoElement | null = null;
-    let captionIntervals: TimedInterval[] = [];
-    let smartSkipIntervals: SmartSkipIntervals = [];
+    let silentIntervals: TimedInterval[] = [];
+    let smartSkipIntervals: TimedInterval[] = [];
     let captionVersion = 0;
     let currentVideoId: string | null = null;
     let x2speed: {
@@ -92,7 +92,7 @@ import type {
     const speed = createSpeedControl({
         getVideo: () => video,
         getConfig: () => config,
-        getCaptionIntervals: () => captionIntervals,
+        getSilentIntervals: () => silentIntervals,
         getSmartSkipIntervals: () => smartSkipIntervals,
         onRateApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
     });
@@ -161,7 +161,7 @@ import type {
         overlay.update({
             video,
             smartSkipIntervals,
-            captionIntervals,
+            silentIntervals,
             captionVersion,
             config,
         });
@@ -170,7 +170,7 @@ import type {
     function updateBadgeCaptionState() {
         // Gray out the badge when the extension is active but the current
         // video has no captions to drive the auto speed.
-        overlay.setBadgeActive(config.enabled && captionIntervals.length > 0);
+        overlay.setBadgeActive(config.enabled && silentIntervals.length > 0);
     }
 
     function refreshPlayhead() {
@@ -320,13 +320,17 @@ import type {
     }
 
     function applyCaptions(data: TimedText, source: "cache" | "network") {
-        captionIntervals = captionsToIntervals(data, {
-            filterSquareBrackets: config.filterSquareBrackets,
-            filterParentheses: config.filterParentheses,
-        });
+        silentIntervals = captionsToSilentIntervals(
+            data,
+            video?.duration ?? 0,
+            {
+                filterSquareBrackets: config.filterSquareBrackets,
+                filterParentheses: config.filterParentheses,
+            },
+        );
         captionVersion++;
-        log(`Loaded ${captionIntervals.length} caption intervals (${source})`);
-        log(captionIntervals.slice(0, 10));
+        log(`Loaded ${silentIntervals.length} caption intervals (${source})`);
+        log(silentIntervals.slice(0, 10));
 
         // Immediately recalculate because new captions probably mean a new
         // video or language.
@@ -356,7 +360,7 @@ import type {
         }
 
         currentVideoId = nextVideoId;
-        captionIntervals = [];
+        silentIntervals = [];
 
         const smartSkips = getCachedSmartSkips(currentVideoId ?? "");
         if (smartSkips) {

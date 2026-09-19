@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
     cacheTimedText,
-    captionsToIntervals,
+    _captionsToIntervals as captionsToIntervals,
     getCachedTimedText,
     mergeIntervals,
 } from "./captions";

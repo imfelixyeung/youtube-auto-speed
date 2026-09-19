@@ -20,14 +20,14 @@ export type SpeedControl = {
 export function createSpeedControl(opts: {
     getVideo: () => HTMLVideoElement | null;
     getConfig: () => AutoSpeedConfig;
-    getCaptionIntervals: () => TimedInterval[];
+    getSilentIntervals: () => TimedInterval[];
     getSmartSkipIntervals: () => TimedInterval[];
     onRateApplied: (rounded: number) => void;
 }): SpeedControl {
     const {
         getVideo,
         getConfig,
-        getCaptionIntervals,
+        getSilentIntervals: getCaptionIntervals,
         getSmartSkipIntervals,
         onRateApplied,
     } = opts;
@@ -70,7 +70,7 @@ export function createSpeedControl(opts: {
         const desired = computeSpeedAtTime(
             video.currentTime,
             {
-                captions: getCaptionIntervals(),
+                silent: getCaptionIntervals(),
                 smartSkips: getSmartSkipIntervals(),
             },
             {

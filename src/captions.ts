@@ -119,12 +119,38 @@ function isNonSpeech(text: string, options: NonSpeechOptions): boolean {
     return stripNonSpeech(text, options).trim() === "";
 }
 
+function invert(data: TimedInterval[], duration: number): TimedInterval[] {
+    const result: TimedInterval[] = [];
+    let lastEnd = 0;
+
+    for (const interval of data) {
+        if (lastEnd !== interval.end) {
+            result.push({
+                start: lastEnd,
+                end: interval.start,
+            });
+        }
+        lastEnd = interval.end;
+        if (lastEnd > duration) {
+            lastEnd = duration;
+            break;
+        }
+    }
+
+    result.push({
+        start: lastEnd,
+        end: duration,
+    });
+
+    return result;
+}
+
 /**
  * Convert raw timedtext events into a sorted list of merged speech
  * intervals (in seconds). Empty and non-speech caption events are
  * ignored.
  */
-export function captionsToIntervals(
+export function _captionsToIntervals(
     data: TimedText | null,
     options: NonSpeechOptions = DEFAULT_NON_SPEECH_OPTIONS,
 ): TimedInterval[] {
@@ -174,4 +200,20 @@ export function captionsToIntervals(
     intervals.sort((a, b) => a.start - b.start);
 
     return mergeIntervals(intervals);
+}
+
+/**
+ * Convert raw timedtext events into a sorted list of merged speech
+ * intervals (in seconds). Empty and non-speech caption events are
+ * ignored.
+ */
+export function captionsToSilentIntervals(
+    data: TimedText | null,
+    duration: number,
+    options: NonSpeechOptions = DEFAULT_NON_SPEECH_OPTIONS,
+): TimedInterval[] {
+    return invert(
+        mergeIntervals(_captionsToIntervals(data, options)),
+        duration,
+    );
 }

@@ -16,7 +16,7 @@ const baseConfig: SpeedCurveConfig = {
     easing: easeInOutCubic,
 };
 
-const wrap = (captions: TimedInterval[]) => ({ captions, smartSkips: [] });
+const wrap = (silent: TimedInterval[]) => ({ silent, smartSkips: [] });
 
 describe("clamp01", () => {
     test("clamps values into [0, 1]", () => {

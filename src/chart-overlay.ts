@@ -26,7 +26,7 @@ import { cssVar } from "./utils";
 
 export type ChartData = {
     video: HTMLVideoElement | null;
-    captionIntervals: TimedInterval[];
+    silentIntervals: TimedInterval[];
     smartSkipIntervals: TimedInterval[];
     captionVersion: number;
     config: AutoSpeedConfig;
@@ -262,7 +262,7 @@ export function createChartOverlay(
         playhead.duration = duration;
         playhead.time = data.video.currentTime;
 
-        if (data.captionIntervals.length === 0 || duration <= 0) {
+        if (data.silentIntervals.length === 0 || duration <= 0) {
             if (cachedChartKey === "") {
                 return;
             }
@@ -291,7 +291,7 @@ export function createChartOverlay(
         if (cacheKey !== cachedChartKey) {
             cachedChartPoints = sampleSpeedCurve(
                 {
-                    captions: data.captionIntervals,
+                    silent: data.silentIntervals,
                     smartSkips: data.smartSkipIntervals,
                 },
                 {
