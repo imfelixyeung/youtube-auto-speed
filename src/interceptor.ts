@@ -1,80 +1,7 @@
-import type { AutoSpeedConfigChangedEvent } from "./types";
+import { TimedTextInterceptor } from "./interceptors/timed-text";
 
 (() => {
-    const TIMEDTEXT_PATH = "/api/timedtext";
-
-    let enabled = true;
-
-    window.addEventListener("AUTO_SPEED_CONFIG_CHANGED", (event) => {
-        const detail = (event as AutoSpeedConfigChangedEvent).detail;
-
-        enabled = detail.enabled;
-    });
-
-    function isTimedTextUrl(url: string) {
-        try {
-            const absoluteUrl = new URL(url, window.location.href);
-            return absoluteUrl.pathname === TIMEDTEXT_PATH;
-        } catch {
-            return false;
-        }
-    }
-
-    function extractVideoId(url: string): string | null {
-        try {
-            const videoId = new URL(url, window.location.href).searchParams.get(
-                "v",
-            );
-            return videoId ?? null;
-        } catch {
-            return null;
-        }
-    }
-
-    function sendCaptionData(url: string, text: string) {
-        if (!enabled) {
-            return;
-        }
-
-        if (!text.trim()) {
-            return;
-        }
-
-        // YouTube may return JSON, XML, etc.
-        // For now we're interested in the JSON format.
-        if (!text.trim().startsWith("{")) {
-            return;
-        }
-
-        try {
-            const data = JSON.parse(text);
-
-            if (!data || !Array.isArray(data.events)) {
-                return;
-            }
-
-            window.dispatchEvent(
-                new CustomEvent("AUTO_SPEED_CAPTIONS", {
-                    detail: {
-                        videoId: extractVideoId(url),
-                        url,
-                        data,
-                    },
-                }),
-            );
-
-            console.debug(
-                "[Auto Speed] Captions intercepted:",
-                data.events.length,
-                "events",
-            );
-        } catch (error) {
-            console.debug(
-                "[Auto Speed] Could not parse timedtext response:",
-                error,
-            );
-        }
-    }
+    const interceptors = [new TimedTextInterceptor()];
 
     // ============================================================
     // FETCH
@@ -95,17 +22,18 @@ import type { AutoSpeedConfigChangedEvent } from "./types";
                       ? request.url
                       : "";
 
-            if (isTimedTextUrl(url)) {
-                const clone = response.clone();
+            for (const interceptor of interceptors) {
+                if (!interceptor.match(url)) {
+                    continue;
+                }
 
-                clone
+                const clone = response.clone();
+                await clone
                     .text()
-                    .then((text) => {
-                        sendCaptionData(url, text);
-                    })
+                    .then((text) => interceptor.handle(url, text))
                     .catch((error) => {
-                        console.debug(
-                            "[Auto Speed] Failed to read fetch response:",
+                        interceptor.log(
+                            "Failed to read fetch response:",
                             error,
                         );
                     });
@@ -144,14 +72,22 @@ import type { AutoSpeedConfigChangedEvent } from "./types";
         const xhr = this as AutoSpeedXHR;
         const url = xhr.__autoSpeedUrl;
 
-        if (typeof url === "string" && isTimedTextUrl(url)) {
+        if (typeof url !== "string") {
+            return originalSend.apply(this, args);
+        }
+
+        for (const interceptor of interceptors) {
+            if (!interceptor.match(url)) {
+                continue;
+            }
+
             xhr.addEventListener("load", () => {
                 try {
                     if (
                         xhr.responseType === "" ||
                         xhr.responseType === "text"
                     ) {
-                        sendCaptionData(url, xhr.responseText);
+                        interceptor.handle(url, xhr.responseText);
                     }
                 } catch (error) {
                     console.debug(
