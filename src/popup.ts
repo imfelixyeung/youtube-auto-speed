@@ -9,7 +9,6 @@ import {
     SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
-import { ChoiceConfig } from "./config/types/choice";
 
 const $config = document.querySelector("#config") as HTMLDivElement;
 
@@ -26,14 +25,6 @@ const configs = [
 ];
 
 configs.forEach((config) => {
-    if (config instanceof ChoiceConfig) {
-        const [html, input] = config.addFormElement();
-        $config.appendChild(html);
-        config.attachToElement(input);
-        return;
-    }
-
-    const [html, input] = config.addFormElement();
+    const [html] = config.addAndAttachToElement();
     $config.appendChild(html);
-    config.attachToElement(input);
 });

@@ -77,4 +77,10 @@ export abstract class ConfigType<
     }
 
     public abstract attachToElement(element: FieldElement): void;
+
+    public addAndAttachToElement(): [HTMLElement, FieldElement] {
+        const [html, input] = this.addFormElement();
+        this.attachToElement(input);
+        return [html, input];
+    }
 }
