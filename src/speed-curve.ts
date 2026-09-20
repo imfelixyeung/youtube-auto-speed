@@ -75,6 +75,7 @@ export function computeSpeedAtTime(
     if (current) {
         const prevSpeed = previous ? previous.speed : fallbackSpeed;
         const nextSpeed = next ? next.speed : fallbackSpeed;
+        const minNeighborSpeed = Math.min(prevSpeed, nextSpeed);
 
         let currentSpeed = current.speed;
         let speed = currentSpeed;
@@ -85,7 +86,10 @@ export function computeSpeedAtTime(
 
         // Override the current speed if the bump is too much.
         if (needRampIn && needRampOut && currentDuration < rampDuration) {
-            currentSpeed = currentSpeed * (currentDuration / rampDuration);
+            currentSpeed =
+                minNeighborSpeed +
+                (currentSpeed - minNeighborSpeed) *
+                    (currentDuration / rampDuration);
         }
 
         // Ramp IN from previous speed (only if previous speed is lower)
