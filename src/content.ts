@@ -1,6 +1,7 @@
 import "./content.css";
 import {
     cacheTimedText,
+    captionsToRedactedIntervals,
     captionsToSilentIntervals,
     getCachedTimedText,
 } from "./captions";
@@ -68,6 +69,18 @@ import type {
         {
             name: "smartSkip",
             track: new Track("smartSkip", SMART_SKIP_SPEED.defaultValue, []),
+        },
+    ]);
+    const volumeTracks = new Tracks([
+        {
+            name: "normal",
+            track: new Track("normal", 1, [
+                { start: -Infinity, end: Infinity },
+            ]),
+        },
+        {
+            name: "redact",
+            track: new Track("redact", 0, []),
         },
     ]);
     let captionVersion = 0;
@@ -345,6 +358,8 @@ import type {
                 filterParentheses: config.filterParentheses,
             },
         );
+        volumeTracks.get("redact").intervals =
+            captionsToRedactedIntervals(data);
         speedTracks.flatten(true);
         captionVersion++;
         log(

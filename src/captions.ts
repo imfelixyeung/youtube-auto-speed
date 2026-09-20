@@ -217,3 +217,52 @@ export function captionsToSilentIntervals(
         duration,
     );
 }
+
+function shouldRedact(text: string) {
+    return text.includes("[ __ ]");
+}
+
+export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
+    const intervals: TimedInterval[] = [];
+
+    if (!data || !Array.isArray(data.events)) {
+        return [];
+    }
+
+    for (const event of data.events) {
+        const { segs } = event;
+        if (!Array.isArray(segs)) {
+            continue;
+        }
+
+        if (!Number.isFinite(event.tStartMs)) {
+            continue;
+        }
+
+        if (!Number.isFinite(event.dDurationMs)) {
+            continue;
+        }
+
+        segs.forEach((seg, i, segs) => {
+            const redact = shouldRedact(seg.utf8);
+            if (!redact) {
+                return;
+            }
+            const start = event.tStartMs + (seg.tOffsetMs ?? 0);
+            const nextSeg = segs[i + 1];
+            const end = nextSeg?.tOffsetMs
+                ? event.tStartMs + nextSeg?.tOffsetMs
+                : event.tStartMs + event.dDurationMs;
+
+            // Add, convert to seconds and add margin.
+            intervals.push({
+                start: (start - 100) / 1000,
+                end: (end + 100) / 1000,
+            });
+        });
+    }
+
+    // Sort by start time.
+    intervals.sort((a, b) => a.start - b.start);
+    return mergeIntervals(intervals);
+}
