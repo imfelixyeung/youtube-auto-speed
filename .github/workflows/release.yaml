@@ -39,8 +39,6 @@ jobs:
               id: changesets
               uses: changesets/action@v2
               with:
-                  version-script: bun run changeset:version
-                  publish-script: bun run release
                   commit-message: "chore(release): bump package version"
                   pr-title: "chore(release): bump package version"
                   create-github-releases: true
