@@ -37,6 +37,15 @@ export const TALKING_SPEED = new NumberConfig({
     step: SPEED_STEP,
 });
 
+export const BOOST_SPEED = new NumberConfig({
+    displayName: "Boost speed (x)",
+    storageKey: "boostSpeed",
+    defaultValue: 2,
+    min: 0.25,
+    max: 4,
+    step: SPEED_STEP,
+});
+
 export const SILENT_SPEED = new NumberConfig({
     displayName: "Silent speed (x)",
     storageKey: "silentSpeed",
@@ -115,5 +124,3 @@ export const EASING_FUNCTION = new ChoiceConfig({
         },
     ],
 });
-
-export const BOOST_SPEED = 2.0;

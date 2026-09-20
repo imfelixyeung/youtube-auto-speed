@@ -25,28 +25,26 @@ import {
     parseFromVideoData,
     type SmartSkipIntervals,
 } from "./smart-skip";
-import { Track, Tracks } from "./speed/tracks";
+import { type InferTrackNames, Track, Tracks } from "./speed/tracks";
 import { formatTimeSavedRatio } from "./time-saved";
 import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,
     AutoSpeedConfigChangedEvent,
+    AutoSpeedConfigSpeedKey,
     AutoSpeedVideoDataEvent,
     EasingFunction,
     TimedText,
 } from "./types";
 
 (() => {
-    const config: AutoSpeedConfig & {
-        talkingSpeedConfig: number;
-        talkingSpeedBoost: number;
-    } = {
+    const config: AutoSpeedConfig = {
         enabled: true,
         alwaysShowChart: ALWAYS_SHOW_CHART.defaultValue,
         rampDurationSeconds: RAMP_DURATION.defaultValue,
         talkingSpeed: TALKING_SPEED.defaultValue,
-        talkingSpeedConfig: TALKING_SPEED.defaultValue,
-        talkingSpeedBoost: BOOST_SPEED,
+        boostSpeed: BOOST_SPEED.defaultValue,
+        boostAt: 0,
         silentSpeed: SILENT_SPEED.defaultValue,
         filterSquareBrackets: FILTER_SQUARE_BRACKETS.defaultValue,
         filterParentheses: FILTER_PARENTHESES.defaultValue,
@@ -60,7 +58,13 @@ import type {
     const speedTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", TALKING_SPEED.defaultValue, []),
+            track: new Track("normal", TALKING_SPEED.defaultValue, [
+                Track.infinite,
+            ]),
+        },
+        {
+            name: "boost",
+            track: new Track("silent", BOOST_SPEED.defaultValue, []),
         },
         {
             name: "silent",
@@ -95,12 +99,14 @@ import type {
     }
 
     const onBoostStart = () => {
-        log(`Boosting speed to ${config.talkingSpeedBoost}x`);
-        setTalkingSpeed(config.talkingSpeedBoost, true);
+        config.boostAt = Date.now();
+        speedTracks.get("boost").intervals = [Track.infinite];
+        setBoostSpeed(config.boostSpeed);
     };
     const onBoostEnd = () => {
-        log(`Un-boosting speed to ${config.talkingSpeedConfig}x`);
-        setTalkingSpeed(config.talkingSpeedConfig);
+        config.boostAt = 0;
+        speedTracks.get("boost").intervals = [];
+        setBoostSpeed(config.boostSpeed);
     };
 
     const overlay = createChartOverlay(log, {
@@ -477,34 +483,34 @@ import type {
         log(`Ramp duration: ${seconds}s`);
     }
 
-    function setTalkingSpeed(speed: number, isBoost = false) {
-        config.talkingSpeed = speed;
-        if (!isBoost) {
-            config.talkingSpeedConfig = speed;
-        }
-        speedTracks.get("normal").speed = speed;
+    function setSpeed(
+        label: string,
+        configKey: AutoSpeedConfigSpeedKey,
+        track: InferTrackNames<typeof speedTracks>,
+        speed: number,
+    ) {
+        config[configKey] = speed;
+        speedTracks.get(track).speed = speed;
         speedTracks.flatten(true);
         updateSpeed();
         updateChart();
-        log(`Talking speed: ${speed}x`);
+        log(`${label}: ${speed}x`);
+    }
+
+    function setTalkingSpeed(speed: number) {
+        setSpeed("Talking speed", "talkingSpeed", "normal", speed);
+    }
+
+    function setBoostSpeed(speed: number) {
+        setSpeed("Boost speed", "boostSpeed", "boost", speed);
     }
 
     function setSilentSpeed(speed: number) {
-        config.silentSpeed = speed;
-        speedTracks.get("silent").speed = speed;
-        speedTracks.flatten(true);
-        updateSpeed();
-        updateChart();
-        log(`Silent speed: ${speed}x`);
+        setSpeed("Silent speed", "silentSpeed", "silent", speed);
     }
 
     function setSmartSkipSpeed(speed: number) {
-        config.smartSkipSpeed = speed;
-        speedTracks.get("smartSkip").speed = speed;
-        speedTracks.flatten(true);
-        updateSpeed();
-        updateChart();
-        log(`Smart skip speed: ${speed}x`);
+        setSpeed("Smart skip speed", "smartSkipSpeed", "smartSkip", speed);
     }
 
     function setEasingFunction(value: string, fn: EasingFunction) {
@@ -616,6 +622,7 @@ import type {
     ALWAYS_SHOW_CHART.listen(setAlwaysShowChart);
     RAMP_DURATION.listen(setRampDuration);
     TALKING_SPEED.listen(setTalkingSpeed);
+    BOOST_SPEED.listen(setBoostSpeed);
     SILENT_SPEED.listen(setSilentSpeed);
     SMART_SKIP_SPEED.listen(setSmartSkipSpeed);
     FILTER_SQUARE_BRACKETS.listen((v) =>

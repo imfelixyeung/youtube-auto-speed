@@ -1,6 +1,8 @@
 import type { TimedInterval, TimedIntervalWithSpeed } from "../speed-curve";
 
 export class Track<I extends TimedInterval = TimedInterval> {
+    static infinite: TimedInterval = { start: -Infinity, end: Infinity };
+
     constructor(
         public name: string,
         public speed: number,
@@ -107,3 +109,5 @@ export class Tracks<T extends string> {
         return this.flattened;
     }
 }
+
+export type InferTrackNames<T> = T extends Tracks<infer N> ? N : never;
