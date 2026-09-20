@@ -1,6 +1,9 @@
-import { SPEED_STEP } from "./config";
-import { computeSpeedAtTime, type TimedIntervalWithSpeed } from "./speed-curve";
-import type { AutoSpeedConfig } from "./types";
+import { SPEED_STEP } from "../config";
+import {
+    computeSpeedAtTime,
+    type TimedIntervalWithSpeed,
+} from "../speed-curve";
+import type { AutoSpeedConfig } from "../types";
 
 export type SpeedControl = {
     /**

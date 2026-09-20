@@ -18,6 +18,7 @@ import {
     SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
+import { createSpeedControl } from "./controllers/speed";
 import {
     cacheSmartSkips,
     getCachedSmartSkips,
@@ -25,7 +26,6 @@ import {
     type SmartSkipIntervals,
 } from "./smart-skip";
 import { Track, Tracks } from "./speed/tracks";
-import { createSpeedControl } from "./speed-control";
 import { formatTimeSavedRatio } from "./time-saved";
 import type {
     AutoSpeedCaptionsEvent,
