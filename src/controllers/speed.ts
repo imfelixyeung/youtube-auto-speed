@@ -5,31 +5,30 @@ import {
 } from "../speed-curve";
 import type { AutoSpeedConfig } from "../types";
 
-export type SpeedControl = {
-    /**
-     * Apply a desired playback rate to the video.
-     */
-    set: (rate: number) => void;
-    /**
-     * Recompute the desired rate for the current video time and apply it.
-     */
-    update: () => void;
-};
+function roundToNearest05(value: number) {
+    return Math.round(value / SPEED_STEP) * SPEED_STEP;
+}
 
-export function createSpeedControl(opts: {
-    getVideo: () => HTMLVideoElement | null;
-    getConfig: () => AutoSpeedConfig;
-    getIntervals: () => TimedIntervalWithSpeed[];
-    onRateApplied: (rounded: number) => void;
-}): SpeedControl {
-    const { getVideo, getConfig, getIntervals, onRateApplied } = opts;
+export class SpeedController {
+    private getVideo: () => HTMLVideoElement | null;
+    private getConfig: () => AutoSpeedConfig;
+    private getIntervals: () => TimedIntervalWithSpeed[];
+    private onRateApplied: (rounded: number) => void;
 
-    function roundToNearest05(value: number) {
-        return Math.round(value / SPEED_STEP) * SPEED_STEP;
+    constructor(props: {
+        getVideo: () => HTMLVideoElement | null;
+        getConfig: () => AutoSpeedConfig;
+        getIntervals: () => TimedIntervalWithSpeed[];
+        onRateApplied: (rounded: number) => void;
+    }) {
+        this.getVideo = props.getVideo;
+        this.getConfig = props.getConfig;
+        this.getIntervals = props.getIntervals;
+        this.onRateApplied = props.onRateApplied;
     }
 
-    function set(rate: number) {
-        const video = getVideo();
+    public set(rate: number) {
+        const video = this.getVideo();
 
         if (!video) {
             return;
@@ -42,34 +41,33 @@ export function createSpeedControl(opts: {
         }
 
         video.playbackRate = rounded;
-        onRateApplied(rounded);
+        this.onRateApplied(rounded);
     }
 
-    function update() {
-        const video = getVideo();
-        const config = getConfig();
+    public update() {
+        const video = this.getVideo();
+        const config = this.getConfig();
 
         if (!config.enabled || !video) {
             return;
         }
 
         if (video.paused || video.ended) {
-            set(1);
+            this.set(1);
 
             return;
         }
 
-        const desired = computeSpeedAtTime(video.currentTime, getIntervals(), {
-            fallbackSpeed: config.talkingSpeed,
-            rampDuration: config.rampDurationSeconds,
-            easingFn: config.easingFunction.fn,
-        });
+        const desired = computeSpeedAtTime(
+            video.currentTime,
+            this.getIntervals(),
+            {
+                fallbackSpeed: config.talkingSpeed,
+                rampDuration: config.rampDurationSeconds,
+                easingFn: config.easingFunction.fn,
+            },
+        );
 
-        set(desired);
+        this.set(desired);
     }
-
-    return {
-        set,
-        update,
-    };
 }

@@ -18,7 +18,7 @@ import {
     SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
-import { createSpeedControl } from "./controllers/speed";
+import { SpeedController } from "./controllers/speed";
 import {
     cacheSmartSkips,
     getCachedSmartSkips,
@@ -108,7 +108,7 @@ import type {
         onBoostEnd,
     });
 
-    const speed = createSpeedControl({
+    const speed = new SpeedController({
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => speedTracks.flatten().intervals,
