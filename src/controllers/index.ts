@@ -1,19 +1,19 @@
 import {
-    computeSpeedAtTime,
-    type TimedIntervalWithSpeed,
+    computeValueAtTime,
+    type TimedIntervalWithNumberValue,
 } from "../speed-curve";
 import type { AutoSpeedConfig } from "../types";
 
 export abstract class AbstractController {
     protected getVideo: () => HTMLVideoElement | null;
     protected getConfig: () => AutoSpeedConfig;
-    protected getIntervals: () => TimedIntervalWithSpeed[];
+    protected getIntervals: () => TimedIntervalWithNumberValue[];
     protected onApplied: (value: number) => void;
 
     constructor(props: {
         getVideo: () => HTMLVideoElement | null;
         getConfig: () => AutoSpeedConfig;
-        getIntervals: () => TimedIntervalWithSpeed[];
+        getIntervals: () => TimedIntervalWithNumberValue[];
         onApplied: (rounded: number) => void;
     }) {
         this.getVideo = props.getVideo;
@@ -28,11 +28,11 @@ export abstract class AbstractController {
 
     protected compute(): number {
         const config = this.getConfig();
-        return computeSpeedAtTime(
+        return computeValueAtTime(
             this.getVideo()?.currentTime ?? 0,
             this.getIntervals(),
             {
-                fallbackSpeed: config.talkingSpeed,
+                fallback: config.talkingSpeed,
                 rampDuration: config.rampDurationSeconds,
                 easingFn: config.easingFunction.fn,
             },

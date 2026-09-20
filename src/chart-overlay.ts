@@ -10,9 +10,9 @@ import {
 } from "chart.js";
 import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
-    type SpeedPoint,
-    sampleSpeedCurve,
-    type TimedIntervalWithSpeed,
+    sampleCurve,
+    type TimedIntervalWithNumberValue,
+    type ValuePoint,
 } from "./speed-curve";
 import {
     cumulativeTimeSaved,
@@ -25,7 +25,7 @@ import { cssVar } from "./utils";
 
 export type ChartData = {
     video: HTMLVideoElement | null;
-    intervals: TimedIntervalWithSpeed[];
+    intervals: TimedIntervalWithNumberValue[];
     captionVersion: number;
     config: AutoSpeedConfig;
 };
@@ -96,7 +96,7 @@ export function createChartOverlay(
     let lastPlayheadRender = 0;
     let overlayHovered = false;
     let cachedChartKey = "";
-    let cachedChartPoints: SpeedPoint[] = [];
+    let cachedChartPoints: ValuePoint[] = [];
     let cachedTimeSaved: TimeSavedPoint[] = [];
     let lastData: ChartData | null = null;
 
@@ -291,12 +291,12 @@ export function createChartOverlay(
         ].join("|");
 
         if (cacheKey !== cachedChartKey) {
-            cachedChartPoints = sampleSpeedCurve(
+            cachedChartPoints = sampleCurve(
                 data.intervals,
                 duration,
                 duration / MAX_CHART_SAMPLES,
                 {
-                    fallbackSpeed: data.config.talkingSpeed,
+                    fallback: data.config.talkingSpeed,
                     rampDuration: data.config.rampDurationSeconds,
                     easingFn: data.config.easingFunction.fn,
                 },
@@ -306,7 +306,7 @@ export function createChartOverlay(
                 point.time.toFixed(2),
             );
 
-            dataset.data = cachedChartPoints.map((point) => point.speed);
+            dataset.data = cachedChartPoints.map((point) => point.value);
 
             // The cumulative saved-time curve is a side-effect of the same
             // sampled speed curve, so it only needs this one integration pass

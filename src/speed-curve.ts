@@ -5,7 +5,8 @@ export type TimedInterval = {
     end: number;
 };
 
-export type TimedIntervalWithSpeed = TimedInterval & { speed: number };
+export type TimedIntervalWithValue<T> = TimedInterval & { value: T };
+export type TimedIntervalWithNumberValue = TimedIntervalWithValue<number>;
 
 export type EasingFn = (t: number) => number;
 
@@ -14,18 +15,18 @@ export function clamp01(value: number) {
 }
 
 export type Neighbors = {
-    current: TimedIntervalWithSpeed | null;
-    previous: TimedIntervalWithSpeed | null;
-    next: TimedIntervalWithSpeed | null;
+    current: TimedIntervalWithNumberValue | null;
+    previous: TimedIntervalWithNumberValue | null;
+    next: TimedIntervalWithNumberValue | null;
 };
 
 export function findNeighbors(
     time: number,
-    intervals: TimedIntervalWithSpeed[],
+    intervals: TimedIntervalWithNumberValue[],
 ) {
-    let current: TimedIntervalWithSpeed | null = null;
-    let previous: TimedIntervalWithSpeed | null = null;
-    let next: TimedIntervalWithSpeed | null = null;
+    let current: TimedIntervalWithNumberValue | null = null;
+    let previous: TimedIntervalWithNumberValue | null = null;
+    let next: TimedIntervalWithNumberValue | null = null;
 
     for (let i = 0; i < intervals.length; i++) {
         const interval = intervals[i];
@@ -52,47 +53,47 @@ export function findNeighbors(
 /**
  * Desired playback rate at a given video time with smooth easing.
  */
-export function computeSpeedAtTime(
+export function computeValueAtTime(
     time: number,
-    intervals: TimedIntervalWithSpeed[],
+    intervals: TimedIntervalWithNumberValue[],
     config: {
-        fallbackSpeed: number;
+        fallback: number;
         rampDuration: number;
         easingFn: EasingFn;
     },
 ): number {
-    const { fallbackSpeed, rampDuration, easingFn } = config;
+    const { fallback, rampDuration, easingFn } = config;
     if (intervals.length === 0) {
-        return config.fallbackSpeed;
+        return config.fallback;
     }
 
     const { current, previous, next } = findNeighbors(time, intervals);
 
     if (rampDuration <= 0) {
-        return current?.speed ?? fallbackSpeed;
+        return current?.value ?? fallback;
     }
 
     if (current) {
-        const prevSpeed = previous ? previous.speed : fallbackSpeed;
-        const nextSpeed = next ? next.speed : fallbackSpeed;
-        const minNeighborSpeed = Math.min(prevSpeed, nextSpeed);
+        const prevValue = previous ? previous.value : fallback;
+        const nextValue = next ? next.value : fallback;
+        const minNeighborValue = Math.min(prevValue, nextValue);
 
-        let currentSpeed = current.speed;
-        let speed = currentSpeed;
+        let currentValue = current.value;
+        let value = currentValue;
         const currentMid = (current.start + current.end) / 2;
         const currentDuration = current.end - current.start;
-        const needRampIn = prevSpeed < current.speed;
-        const needRampOut = nextSpeed < current.speed;
+        const needRampIn = prevValue < current.value;
+        const needRampOut = nextValue < current.value;
 
-        // Override the current speed if the bump is too much.
+        // Override the current value if the bump is too much.
         if (needRampIn && needRampOut && currentDuration < rampDuration) {
-            currentSpeed =
-                minNeighborSpeed +
-                (currentSpeed - minNeighborSpeed) *
+            currentValue =
+                minNeighborValue +
+                (currentValue - minNeighborValue) *
                     (currentDuration / rampDuration);
         }
 
-        // Ramp IN from previous speed (only if previous speed is lower)
+        // Ramp IN from previous value (only if previous value is lower)
         if (needRampIn) {
             const effectiveRamp = Math.min(
                 needRampOut ? currentMid - current.start : currentDuration,
@@ -102,13 +103,13 @@ export function computeSpeedAtTime(
             if (time < rampEnd) {
                 const progress = (time - current.start) / effectiveRamp;
                 const easedProgress = easingFn(progress);
-                const rampSpeed =
-                    prevSpeed + easedProgress * (currentSpeed - prevSpeed);
-                speed = Math.min(speed, rampSpeed);
+                const rampValue =
+                    prevValue + easedProgress * (currentValue - prevValue);
+                value = Math.min(value, rampValue);
             }
         }
 
-        // Ramp OUT to next speed (only if next speed is lower)
+        // Ramp OUT to next value (only if next value is lower)
         if (needRampOut) {
             const effectiveRamp = Math.min(
                 needRampIn ? current.end - currentMid : currentDuration,
@@ -118,65 +119,65 @@ export function computeSpeedAtTime(
             if (time >= rampStart) {
                 const progress = (time - rampStart) / effectiveRamp;
                 const easedProgress = easingFn(progress);
-                const rampSpeed =
-                    currentSpeed - easedProgress * (currentSpeed - nextSpeed);
-                speed = Math.min(speed, rampSpeed);
+                const rampValue =
+                    currentValue - easedProgress * (currentValue - nextValue);
+                value = Math.min(value, rampValue);
             }
         }
 
-        return speed;
+        return value;
     }
 
     // When time falls outside any active interval (in fallback space)
-    const prevSpeed = previous ? previous.speed : fallbackSpeed;
-    const nextSpeed = next ? next.speed : fallbackSpeed;
+    const prevValue = previous ? previous.value : fallback;
+    const nextValue = next ? next.value : fallback;
 
-    // Transition out of previous interval if previous speed was higher
-    if (previous && prevSpeed > fallbackSpeed) {
+    // Transition out of previous interval if previous value was higher
+    if (previous && prevValue > fallback) {
         if (time < previous.end + rampDuration) {
             const progress = (time - previous.end) / rampDuration;
             const easedProgress = easingFn(progress);
-            return prevSpeed - easedProgress * (prevSpeed - fallbackSpeed);
+            return prevValue - easedProgress * (prevValue - fallback);
         }
     }
 
-    // Transition into next interval if next speed is higher
-    if (next && nextSpeed > fallbackSpeed && rampDuration > 0) {
+    // Transition into next interval if next value is higher
+    if (next && nextValue > fallback && rampDuration > 0) {
         if (time >= next.start - rampDuration) {
             const progress =
                 (time - (next.start - rampDuration)) / rampDuration;
             const easedProgress = easingFn(progress);
-            return fallbackSpeed + easedProgress * (nextSpeed - fallbackSpeed);
+            return fallback + easedProgress * (nextValue - fallback);
         }
     }
 
-    return fallbackSpeed;
+    return fallback;
 }
 
-export type SpeedPoint = {
+export type ValuePoint = {
     time: number;
-    speed: number;
+    value: number;
 };
 
 /**
- * Sample the speed curve so it can be rendered as a line graph later.
+ * Sample the curve so it can be rendered as a line graph later.
  */
-export function sampleSpeedCurve(
-    intervals: TimedIntervalWithSpeed[],
+export function sampleCurve(
+    intervals: TimedIntervalWithNumberValue[],
     durationSeconds: number,
     stepSeconds = 0.1,
     config: {
-        fallbackSpeed: number;
+        fallback: number;
         rampDuration: number;
         easingFn: EasingFn;
     },
-): SpeedPoint[] {
-    const points: SpeedPoint[] = [];
+): ValuePoint[] {
+    const points: ValuePoint[] = [];
 
     for (let time = 0; time <= durationSeconds; time += stepSeconds) {
         points.push({
             time,
-            speed: computeSpeedAtTime(time, intervals, config),
+            value: computeValueAtTime(time, intervals, config),
         });
     }
 

@@ -1,6 +1,6 @@
 import { easeLinear } from "d3-ease";
 import { REDACT_PADDING } from "../constants";
-import { computeSpeedAtTime } from "../speed-curve";
+import { computeValueAtTime } from "../speed-curve";
 import { AbstractController } from ".";
 
 export class VolumeController extends AbstractController {
@@ -18,11 +18,11 @@ export class VolumeController extends AbstractController {
     }
 
     protected compute(): number {
-        return computeSpeedAtTime(
+        return computeValueAtTime(
             this.getVideo()?.currentTime ?? 0,
             this.getIntervals(),
             {
-                fallbackSpeed: 1,
+                fallback: 1,
                 rampDuration: REDACT_PADDING,
                 easingFn: easeLinear,
             },
