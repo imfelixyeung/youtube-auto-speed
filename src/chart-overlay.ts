@@ -284,6 +284,7 @@ export function createChartOverlay(
             duration.toFixed(3),
             data.config.talkingSpeed,
             data.config.silentSpeed,
+            data.config.smartSkipSpeed,
             data.config.rampDurationSeconds,
         ].join("|");
 
