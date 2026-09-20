@@ -8,7 +8,9 @@
     "private": false,
     "type": "module",
     "scripts": {
-        "prepack": "make && jq 'del(.dependencies, .devDependencies, .peerDependencies)' package.json > package.json.tmp && mv package.json.tmp package.json"
+        "prepack": "jq 'del(.dependencies, .devDependencies, .peerDependencies)' package.json > package.json.tmp && mv package.json.tmp package.json",
+        "changeset:version": "changeset version",
+        "changeset:release": "make zip && changeset publish"
     },
     "devDependencies": {
         "@biomejs/biome": "2.5.12",
