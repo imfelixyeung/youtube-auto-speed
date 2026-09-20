@@ -23,13 +23,14 @@ import {
     parseFromVideoData,
     type SmartSkipIntervals,
 } from "./smart-skip";
-import { Track, Tracks } from "./speed/tracks";
+import { type InferTrackNames, Track, Tracks } from "./speed/tracks";
 import { createSpeedControl } from "./speed-control";
 import { formatTimeSavedRatio } from "./time-saved";
 import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,
     AutoSpeedConfigChangedEvent,
+    AutoSpeedConfigSpeedKey,
     AutoSpeedVideoDataEvent,
     EasingFunction,
     TimedText,
@@ -87,18 +88,12 @@ import type {
     const onBoostStart = () => {
         config.boostAt = Date.now();
         speedTracks.get("boost").intervals = [Track.infinite];
-        speedTracks.flatten(true);
-        updateSpeed();
-        updateChart();
-        log("Boost start");
+        setBoostSpeed(config.boostSpeed);
     };
     const onBoostEnd = () => {
         config.boostAt = 0;
         speedTracks.get("boost").intervals = [];
-        speedTracks.flatten(true);
-        updateSpeed();
-        updateChart();
-        log(`Boost end`);
+        setBoostSpeed(config.boostSpeed);
     };
 
     const overlay = createChartOverlay(log, {
@@ -473,40 +468,34 @@ import type {
         log(`Ramp duration: ${seconds}s`);
     }
 
-    function setTalkingSpeed(speed: number) {
-        config.talkingSpeed = speed;
-        speedTracks.get("normal").speed = speed;
+    function setSpeed(
+        label: string,
+        configKey: AutoSpeedConfigSpeedKey,
+        track: InferTrackNames<typeof speedTracks>,
+        speed: number,
+    ) {
+        config[configKey] = speed;
+        speedTracks.get(track).speed = speed;
         speedTracks.flatten(true);
         updateSpeed();
         updateChart();
-        log(`Talking speed: ${speed}x`);
+        log(`${label}: ${speed}x`);
+    }
+
+    function setTalkingSpeed(speed: number) {
+        setSpeed("Talking speed", "talkingSpeed", "normal", speed);
     }
 
     function setBoostSpeed(speed: number) {
-        config.boostSpeed = speed;
-        speedTracks.get("boost").speed = speed;
-        speedTracks.flatten(true);
-        updateSpeed();
-        updateChart();
-        log(`Boost speed: ${speed}x`);
+        setSpeed("Boost speed", "boostSpeed", "boost", speed);
     }
 
     function setSilentSpeed(speed: number) {
-        config.silentSpeed = speed;
-        speedTracks.get("silent").speed = speed;
-        speedTracks.flatten(true);
-        updateSpeed();
-        updateChart();
-        log(`Silent speed: ${speed}x`);
+        setSpeed("Silent speed", "silentSpeed", "silent", speed);
     }
 
     function setSmartSkipSpeed(speed: number) {
-        config.smartSkipSpeed = speed;
-        speedTracks.get("smartSkip").speed = speed;
-        speedTracks.flatten(true);
-        updateSpeed();
-        updateChart();
-        log(`Smart skip speed: ${speed}x`);
+        setSpeed("Smart skip speed", "smartSkipSpeed", "smartSkip", speed);
     }
 
     function setEasingFunction(value: string, fn: EasingFunction) {

@@ -109,3 +109,5 @@ export class Tracks<T extends string> {
         return this.flattened;
     }
 }
+
+export type InferTrackNames<T> = T extends Tracks<infer N> ? N : never;

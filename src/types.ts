@@ -2,18 +2,24 @@ import type { VideoData } from "./schemas/video-data";
 
 export type EasingFunction = (v: number) => number;
 
+const autoSpeedConfigSpeedKeys = [
+    "talkingSpeed",
+    "boostSpeed",
+    "silentSpeed",
+    "smartSkipSpeed",
+] as const;
+export type AutoSpeedConfigSpeedKey = (typeof autoSpeedConfigSpeedKeys)[number];
+
 export type AutoSpeedConfig = {
     enabled: boolean;
     alwaysShowChart: boolean;
     rampDurationSeconds: number;
-    talkingSpeed: number;
-    boostSpeed: number;
     boostAt: number;
-    silentSpeed: number;
-    smartSkipSpeed: number;
     filterSquareBrackets: boolean;
     filterParentheses: boolean;
     easingFunction: { value: string; fn: EasingFunction };
+} & {
+    [key in AutoSpeedConfigSpeedKey]: number;
 };
 
 export type AutoSpeedCaptionsEvent = CustomEvent<{
