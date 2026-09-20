@@ -4,17 +4,14 @@ import {
     computeSpeedAtTime,
     easeInOutCubic,
     sampleSpeedCurve,
-    type TimedInterval,
 } from "./speed-curve";
 
+const fallback = 1;
 const baseConfig = {
-    fallbackSpeed: 1,
+    fallbackSpeed: fallback,
     rampDuration: 1,
     easingFn: easeInOutCubic,
 };
-
-const wrap = (intervals: TimedInterval[]) =>
-    intervals.map((i) => ({ ...i, speed: 1 }));
 
 describe("clamp01", () => {
     test("clamps values into [0, 1]", () => {
@@ -39,56 +36,60 @@ describe("easeInOutCubic", () => {
 });
 
 describe("computeSpeedAtTime", () => {
-    const intervals = [{ start: 0, end: 1 }];
+    const first = { start: 0, end: 1, speed: 1 };
+    const second = { start: 1, end: 2, speed: 2 };
+    const intervals = [first, second];
 
-    test("returns talking speed while a caption is on screen", () => {
-        expect(computeSpeedAtTime(0.5, wrap(intervals), baseConfig)).toBe(1);
+    test("returns first speed while a within interval", () => {
+        expect(computeSpeedAtTime(0.5, intervals, baseConfig)).toBe(
+            first.speed,
+        );
     });
 
-    test("returns talking speed when there are no captions", () => {
-        expect(computeSpeedAtTime(10, wrap([]), baseConfig)).toBe(1);
+    test("returns fallback speed when there are no intervals", () => {
+        expect(computeSpeedAtTime(10, [], baseConfig)).toBe(fallback);
     });
 
-    test("ramps up between talking and silent speed after speech ends", () => {
-        const speed = computeSpeedAtTime(1.5, wrap(intervals), baseConfig);
+    test("ramps up between first and second speed after speech ends", () => {
+        const speed = computeSpeedAtTime(1.5, intervals, baseConfig);
 
-        expect(speed).toBeGreaterThan(1);
-        expect(speed).toBeLessThan(2);
+        expect(speed).toBeGreaterThan(first.speed);
+        expect(speed).toBeLessThan(second.speed);
     });
 
-    test("reaches silent speed one full ramp after speech ends", () => {
-        expect(computeSpeedAtTime(2, wrap(intervals), baseConfig)).toBe(2);
+    test("reaches fallback speed one full ramp after speech ends", () => {
+        expect(computeSpeedAtTime(3, intervals, baseConfig)).toBe(fallback);
     });
 
-    test("returns silent speed far from any caption", () => {
-        expect(computeSpeedAtTime(5, wrap(intervals), baseConfig)).toBe(2);
+    test("returns fallback speed far from any intervals", () => {
+        expect(computeSpeedAtTime(5, intervals, baseConfig)).toBe(fallback);
     });
 
-    test("reaches talking speed exactly when the next caption starts", () => {
-        const twoIntervals = [
-            { start: 0, end: 1 },
-            { start: 3, end: 4 },
-        ];
-
-        expect(computeSpeedAtTime(3, wrap(twoIntervals), baseConfig)).toBe(1);
+    test("reaches defined speed exactly when the next caption starts", () => {
+        expect(computeSpeedAtTime(2, intervals, baseConfig)).toBe(second.speed);
     });
 });
 
 describe("sampleSpeedCurve", () => {
     test("samples the curve every step, inclusive of the end", () => {
-        const intervals = [{ start: 1, end: 2 }];
+        const intervals = [{ start: 1, end: 2, speed: 1 }];
 
-        const points = sampleSpeedCurve(wrap(intervals), 2, 0.5, baseConfig);
+        const points = sampleSpeedCurve(intervals, 2, 0.5, baseConfig);
 
         expect(points.map((point) => point.time)).toEqual([0, 0.5, 1, 1.5, 2]);
     });
 
     test("samples the correct speed at each point", () => {
-        const intervals = [{ start: 1, end: 2 }];
+        const intervals = [
+            { start: 1, end: 2, speed: 1 },
+            { start: 2, end: 3, speed: 2 },
+        ];
 
-        const points = sampleSpeedCurve(wrap(intervals), 2, 0.5, baseConfig);
+        const points = sampleSpeedCurve(intervals, 3, 0.5, baseConfig);
 
-        expect(points[0]?.speed).toBe(2);
-        expect(points[2]?.speed).toBe(1);
+        expect(points[0]?.speed).toBe(1);
+        expect(points[4]?.speed).toBe(1); // t=2
+        expect(points[5]?.speed).toBe(1.5); // t=2.5
+        expect(points[6]?.speed).toBe(2); // t=3
     });
 });
