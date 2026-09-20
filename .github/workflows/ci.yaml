@@ -1,4 +1,4 @@
-name: Build
+name: CI
 
 on:
     push:
@@ -14,8 +14,8 @@ jobs:
 
             - run: bun install
 
-            - name: Typecheck
-              run: make typecheck
+            - name: CI
+              run: make ci
 
             - name: Build & package
               run: make zip

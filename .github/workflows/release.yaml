@@ -1,0 +1,56 @@
+name: release
+
+on:
+    push:
+        branches:
+            - main
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+            id-token: write
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.2
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: "24.x"
+                  registry-url: "https://registry.npmjs.org"
+                  package-manager-cache: false
+
+            - run: bun install --frozen-lockfile
+
+            - run: make zip
+
+            - name: Create release PR or publish to npm
+              id: changesets
+              uses: changesets/action@v2
+              with:
+                  version-script: bun run changeset:version
+                  publish-script: bun run release
+                  commit-message: "chore(release): bump package version"
+                  pr-title: "chore(release): bump package version"
+                  create-github-releases: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Upload build.zip to Release
+              if: steps.changesets.outputs.published == 'true'
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TAG=$(git describe --tags --abbrev=0)
+                  gh release upload "$TAG" youtube-auto-speed.zip --clobber
