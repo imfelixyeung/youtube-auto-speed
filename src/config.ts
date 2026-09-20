@@ -13,9 +13,9 @@ export const RAMP_DURATION = new NumberConfig({
     displayName: "Ramp duration (s)",
     storageKey: "rampDuration",
     defaultValue: 5,
-    min: 0.5,
+    min: 0,
     max: 300,
-    step: SPEED_STEP,
+    step: 0.1,
 });
 
 export const TALKING_SPEED = new NumberConfig({
