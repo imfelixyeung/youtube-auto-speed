@@ -8,6 +8,7 @@ import { createChartOverlay } from "./chart-overlay";
 import {
     ALWAYS_SHOW_CHART,
     BOOST_SPEED,
+    EASING_FUNCTION,
     ENABLED,
     FILTER_PARENTHESES,
     FILTER_SQUARE_BRACKETS,
@@ -30,6 +31,7 @@ import type {
     AutoSpeedConfig,
     AutoSpeedConfigChangedEvent,
     AutoSpeedVideoDataEvent,
+    EasingFunction,
     TimedText,
 } from "./types";
 
@@ -48,6 +50,10 @@ import type {
         filterSquareBrackets: FILTER_SQUARE_BRACKETS.defaultValue,
         filterParentheses: FILTER_PARENTHESES.defaultValue,
         smartSkipSpeed: SMART_SKIP_SPEED.defaultValue,
+        easingFunction: {
+            value: EASING_FUNCTION.defaultValue,
+            fn: EASING_FUNCTION.defaultMappedValue,
+        },
     };
     let video: HTMLVideoElement | null = null;
     const speedTracks = new Tracks([
@@ -486,6 +492,13 @@ import type {
         log(`Smart skip speed: ${speed}x`);
     }
 
+    function setEasingFunction(value: string, fn: EasingFunction) {
+        config.easingFunction = { value, fn };
+        updateSpeed();
+        updateChart();
+        log("Easing function updated");
+    }
+
     function setNonSpeechFilter(
         filterSquareBrackets: boolean,
         filterParentheses: boolean,
@@ -595,6 +608,9 @@ import type {
     );
     FILTER_PARENTHESES.listen((v) =>
         setNonSpeechFilter(FILTER_SQUARE_BRACKETS.value, v),
+    );
+    EASING_FUNCTION.listen(() =>
+        setEasingFunction(EASING_FUNCTION.value, EASING_FUNCTION.mappedValue),
     );
 
     log("Initialized");

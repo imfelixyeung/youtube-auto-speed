@@ -6,7 +6,10 @@ export type ConfigTypeProps<T> = {
     defaultValue: T;
 };
 
-export abstract class ConfigType<T> {
+export abstract class ConfigType<
+    T,
+    FieldElement extends HTMLElement = HTMLInputElement,
+> {
     public displayName: string;
     public storageKey: string;
     public value: T;
@@ -50,7 +53,13 @@ export abstract class ConfigType<T> {
         this.emitter.addListener("change", listener);
     }
 
-    public addFormElement(): [HTMLElement, HTMLInputElement] {
+    protected createFormField(id: string): FieldElement {
+        const input = document.createElement("input");
+        input.id = id;
+        return input as unknown as FieldElement;
+    }
+
+    public addFormElement(): [HTMLElement, FieldElement] {
         const id = `config-${this.storageKey}`;
 
         const label = document.createElement("label");
@@ -60,13 +69,18 @@ export abstract class ConfigType<T> {
         const span = document.createElement("span");
         span.innerText = this.displayName;
 
-        const input = document.createElement("input");
-        input.id = id;
+        const field = this.createFormField(id);
 
         label.appendChild(span);
-        label.appendChild(input);
-        return [label, input];
+        label.appendChild(field);
+        return [label, field];
     }
 
-    public abstract attachToElement(element: HTMLInputElement): void;
+    public abstract attachToElement(element: FieldElement): void;
+
+    public addAndAttachToElement(): [HTMLElement, FieldElement] {
+        const [html, input] = this.addFormElement();
+        this.attachToElement(input);
+        return [html, input];
+    }
 }

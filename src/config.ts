@@ -1,5 +1,14 @@
-import { easeCubicInOut } from "d3-ease";
+import {
+    easeBackInOut,
+    easeCircleInOut,
+    easeCubicInOut,
+    easeExpInOut,
+    easePolyInOut,
+    easeQuadInOut,
+    easeSinInOut,
+} from "d3-ease";
 import { BooleanConfig } from "./config/types/boolean";
+import { ChoiceConfig } from "./config/types/choice";
 import { NumberConfig } from "./config/types/number";
 
 export const ENABLED = new BooleanConfig({
@@ -64,6 +73,47 @@ export const ALWAYS_SHOW_CHART = new BooleanConfig({
     defaultValue: false,
 });
 
-export const BOOST_SPEED = 2.0;
+export const EASING_FUNCTION = new ChoiceConfig({
+    displayName: "Easing Function",
+    storageKey: "easingFunction",
+    defaultValue: "easeCubicInOut",
+    options: [
+        {
+            value: "easeBackInOut",
+            label: "Back",
+            mapped: easeBackInOut,
+        },
+        {
+            value: "easeCircleInOut",
+            label: "Circle",
+            mapped: easeCircleInOut,
+        },
+        {
+            value: "easeCubicInOut",
+            label: "Cubic",
+            mapped: easeCubicInOut,
+        },
+        {
+            value: "easeExpInOut",
+            label: "Exp",
+            mapped: easeExpInOut,
+        },
+        {
+            value: "easePolyInOut",
+            label: "Poly",
+            mapped: easePolyInOut,
+        },
+        {
+            value: "easeQuadInOut",
+            label: "Quad",
+            mapped: easeQuadInOut,
+        },
+        {
+            value: "easeSinInOut",
+            label: "Sin",
+            mapped: easeSinInOut,
+        },
+    ],
+});
 
-export const EASING = easeCubicInOut;
+export const BOOST_SPEED = 2.0;

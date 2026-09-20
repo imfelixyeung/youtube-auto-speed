@@ -8,7 +8,6 @@ import {
     PointElement,
     type ScriptableContext,
 } from "chart.js";
-import { EASING } from "./config";
 import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
     type SpeedPoint,
@@ -286,6 +285,7 @@ export function createChartOverlay(
             data.config.silentSpeed,
             data.config.smartSkipSpeed,
             data.config.rampDurationSeconds,
+            data.config.easingFunction.value,
         ].join("|");
 
         if (cacheKey !== cachedChartKey) {
@@ -296,7 +296,7 @@ export function createChartOverlay(
                 {
                     fallbackSpeed: data.config.talkingSpeed,
                     rampDuration: data.config.rampDurationSeconds,
-                    easingFn: EASING,
+                    easingFn: data.config.easingFunction.fn,
                 },
             );
 

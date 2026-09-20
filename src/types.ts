@@ -1,5 +1,7 @@
 import type { VideoData } from "./schemas/video-data";
 
+export type EasingFunction = (v: number) => number;
+
 export type AutoSpeedConfig = {
     enabled: boolean;
     alwaysShowChart: boolean;
@@ -9,6 +11,7 @@ export type AutoSpeedConfig = {
     smartSkipSpeed: number;
     filterSquareBrackets: boolean;
     filterParentheses: boolean;
+    easingFunction: { value: string; fn: EasingFunction };
 };
 
 export type AutoSpeedCaptionsEvent = CustomEvent<{

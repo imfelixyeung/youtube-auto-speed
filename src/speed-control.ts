@@ -1,4 +1,4 @@
-import { EASING, SPEED_STEP } from "./config";
+import { SPEED_STEP } from "./config";
 import { computeSpeedAtTime, type TimedIntervalWithSpeed } from "./speed-curve";
 import type { AutoSpeedConfig } from "./types";
 
@@ -59,7 +59,7 @@ export function createSpeedControl(opts: {
         const desired = computeSpeedAtTime(video.currentTime, getIntervals(), {
             fallbackSpeed: config.talkingSpeed,
             rampDuration: config.rampDurationSeconds,
-            easingFn: EASING,
+            easingFn: config.easingFunction.fn,
         });
 
         set(desired);

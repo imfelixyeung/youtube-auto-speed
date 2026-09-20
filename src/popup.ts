@@ -1,5 +1,6 @@
 import {
     ALWAYS_SHOW_CHART,
+    EASING_FUNCTION,
     ENABLED,
     FILTER_PARENTHESES,
     FILTER_SQUARE_BRACKETS,
@@ -20,10 +21,10 @@ const configs = [
     TALKING_SPEED,
     SILENT_SPEED,
     SMART_SKIP_SPEED,
+    EASING_FUNCTION,
 ];
 
 configs.forEach((config) => {
-    const [html, input] = config.addFormElement();
+    const [html] = config.addAndAttachToElement();
     $config.appendChild(html);
-    config.attachToElement(input);
 });
