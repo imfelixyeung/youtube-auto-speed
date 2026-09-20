@@ -5,6 +5,7 @@ import {
     FILTER_SQUARE_BRACKETS,
     RAMP_DURATION,
     SILENT_SPEED,
+    SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
 
@@ -18,6 +19,7 @@ const configs = [
     RAMP_DURATION,
     TALKING_SPEED,
     SILENT_SPEED,
+    SMART_SKIP_SPEED,
 ];
 
 configs.forEach((config) => {

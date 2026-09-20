@@ -8,12 +8,12 @@ import { createChartOverlay } from "./chart-overlay";
 import {
     ALWAYS_SHOW_CHART,
     BOOST_SPEED,
-    DEFAULT_SMART_SKIP_SPEED,
     ENABLED,
     FILTER_PARENTHESES,
     FILTER_SQUARE_BRACKETS,
     RAMP_DURATION,
     SILENT_SPEED,
+    SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
 import {
@@ -47,7 +47,7 @@ import type {
         silentSpeed: SILENT_SPEED.defaultValue,
         filterSquareBrackets: FILTER_SQUARE_BRACKETS.defaultValue,
         filterParentheses: FILTER_PARENTHESES.defaultValue,
-        smartSkipSpeed: DEFAULT_SMART_SKIP_SPEED,
+        smartSkipSpeed: SMART_SKIP_SPEED.defaultValue,
     };
     let video: HTMLVideoElement | null = null;
     const speedTracks = new Tracks([
@@ -61,7 +61,7 @@ import type {
         },
         {
             name: "smartSkip",
-            track: new Track("smartSkip", DEFAULT_SMART_SKIP_SPEED, []),
+            track: new Track("smartSkip", SMART_SKIP_SPEED.defaultValue, []),
         },
     ]);
     let captionVersion = 0;
@@ -477,6 +477,15 @@ import type {
         log(`Silent speed: ${speed}x`);
     }
 
+    function setSmartSkipSpeed(speed: number) {
+        config.smartSkipSpeed = speed;
+        speedTracks.get("smartSkip").speed = speed;
+        speedTracks.flatten(true);
+        updateSpeed();
+        updateChart();
+        log(`Smart skip speed: ${speed}x`);
+    }
+
     function setNonSpeechFilter(
         filterSquareBrackets: boolean,
         filterParentheses: boolean,
@@ -580,6 +589,7 @@ import type {
     RAMP_DURATION.listen(setRampDuration);
     TALKING_SPEED.listen(setTalkingSpeed);
     SILENT_SPEED.listen(setSilentSpeed);
+    SMART_SKIP_SPEED.listen(setSmartSkipSpeed);
     FILTER_SQUARE_BRACKETS.listen((v) =>
         setNonSpeechFilter(v, FILTER_PARENTHESES.value),
     );

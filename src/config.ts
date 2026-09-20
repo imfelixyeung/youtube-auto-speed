@@ -36,7 +36,14 @@ export const SILENT_SPEED = new NumberConfig({
     step: SPEED_STEP,
 });
 
-export const DEFAULT_SMART_SKIP_SPEED = 3;
+export const SMART_SKIP_SPEED = new NumberConfig({
+    displayName: "Smart skip speed (x)",
+    storageKey: "smartSkipSpeed",
+    defaultValue: 3,
+    min: 0.25,
+    max: 16,
+    step: SPEED_STEP,
+});
 
 export const FILTER_SQUARE_BRACKETS = new BooleanConfig({
     displayName: "Filter out [...]",
