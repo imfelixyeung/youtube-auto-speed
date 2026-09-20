@@ -316,9 +316,13 @@ export function createChartOverlay(
                 | undefined;
 
             if (yScale) {
-                yScale.min = data.config.talkingSpeed;
-
-                yScale.max = data.config.silentSpeed;
+                const speeds = [
+                    data.config.talkingSpeed,
+                    data.config.silentSpeed,
+                    data.config.smartSkipSpeed,
+                ];
+                yScale.min = Math.min(...speeds);
+                yScale.max = Math.max(...speeds);
             }
 
             cachedChartKey = cacheKey;

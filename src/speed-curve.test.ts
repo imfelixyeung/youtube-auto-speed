@@ -36,9 +36,7 @@ describe("computeSpeedAtTime", () => {
 
     test("ramps up between first and second speed after speech ends", () => {
         const speed = computeSpeedAtTime(1.5, intervals, baseConfig);
-
-        expect(speed).toBeGreaterThan(first.speed);
-        expect(speed).toBeLessThan(second.speed);
+        expect(speed).toBe(2);
     });
 
     test("reaches fallback speed one full ramp after speech ends", () => {
@@ -69,11 +67,13 @@ describe("sampleSpeedCurve", () => {
             { start: 2, end: 3, speed: 2 },
         ];
 
-        const points = sampleSpeedCurve(intervals, 3, 0.5, baseConfig);
+        const points = sampleSpeedCurve(intervals, 3, 0.25, baseConfig);
 
         expect(points[0]?.speed).toBe(1);
         expect(points[4]?.speed).toBe(1); // t=2
-        expect(points[5]?.speed).toBe(1.5); // t=2.5
-        expect(points[6]?.speed).toBe(2); // t=3
+        expect(points[8]?.speed).toBe(1); // t=2
+        expect(points[9]?.speed).toBe(1.5); // t=2.25
+        expect(points[10]?.speed).toBe(2); // t=2.5
+        expect(points[11]?.speed).toBe(1.5); // t=2.75
     });
 });
