@@ -118,7 +118,7 @@ import type {
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => speedTracks.flatten().intervals,
-        onRateApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
+        onApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
     });
 
     // Time saved is derived from the cached speed curve, so it only needs a
