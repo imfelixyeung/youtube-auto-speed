@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
-import type {
-    TimedInterval,
-    TimedIntervalWithNumberValue,
-} from "../speed-curve";
+import type { TimedInterval, TimedIntervalWithNumberValue } from "../curve";
 import { type TimedTrack, Track, Tracks } from "./tracks";
 
 describe("Track", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { easeCubicInOut } from "d3-ease";
-import { clamp01, computeValueAtTime, sampleCurve } from "./speed-curve";
+import { clamp01, computeValueAtTime, sampleCurve } from "./curve";
 
 const fallback = 1;
 const baseConfig = {

@@ -8,12 +8,12 @@ import {
     PointElement,
     type ScriptableContext,
 } from "chart.js";
-import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
     sampleCurve,
     type TimedIntervalWithNumberValue,
     type ValuePoint,
-} from "./speed-curve";
+} from "./curve";
+import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
     cumulativeTimeSaved,
     formatTimeSavedRatio,

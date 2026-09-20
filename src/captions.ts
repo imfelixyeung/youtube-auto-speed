@@ -1,5 +1,5 @@
 import { REDACT_PADDING } from "./constants";
-import type { TimedInterval } from "./speed-curve";
+import type { TimedInterval } from "./curve";
 import type { TimedText } from "./types";
 
 /**

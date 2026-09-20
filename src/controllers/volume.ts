@@ -1,6 +1,6 @@
 import { easeLinear } from "d3-ease";
 import { REDACT_PADDING } from "../constants";
-import { computeValueAtTime } from "../speed-curve";
+import { computeValueAtTime } from "../curve";
 import { AbstractController } from ".";
 
 export class VolumeController extends AbstractController {

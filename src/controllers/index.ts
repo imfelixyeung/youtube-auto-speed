@@ -1,7 +1,7 @@
 import {
     computeValueAtTime,
     type TimedIntervalWithNumberValue,
-} from "../speed-curve";
+} from "../curve";
 import type { AutoSpeedConfig } from "../types";
 
 export abstract class AbstractController {

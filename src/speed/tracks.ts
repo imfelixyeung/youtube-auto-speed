@@ -1,7 +1,4 @@
-import type {
-    TimedInterval,
-    TimedIntervalWithNumberValue,
-} from "../speed-curve";
+import type { TimedInterval, TimedIntervalWithNumberValue } from "../curve";
 
 export class Track<I extends TimedInterval = TimedInterval> {
     static infinite: TimedInterval = { start: -Infinity, end: Infinity };
