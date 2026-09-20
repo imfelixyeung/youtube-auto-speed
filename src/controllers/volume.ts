@@ -1,5 +1,5 @@
 import { easeLinear } from "d3-ease";
-import { REDACT_PADDING } from "../config";
+import { REDACT_PADDING } from "../constants";
 import { computeSpeedAtTime } from "../speed-curve";
 import { AbstractController } from ".";
 
