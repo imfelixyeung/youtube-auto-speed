@@ -13,16 +13,6 @@ export function clamp01(value: number) {
     return clamp(value, 0, 1);
 }
 
-/**
- * Smooth ease-in-out. The playback rate is treated as a continuous
- * function of video time, so it can later be rendered as a line graph.
- */
-export const easeInOutCubic: EasingFn = (t) => {
-    const x = clamp01(t);
-
-    return x < 0.5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2;
-};
-
 export type Neighbors = {
     current: TimedIntervalWithSpeed | null;
     previous: TimedIntervalWithSpeed | null;

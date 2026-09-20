@@ -8,9 +8,9 @@ import {
     PointElement,
     type ScriptableContext,
 } from "chart.js";
+import { EASING } from "./config";
 import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
-    easeInOutCubic,
     type SpeedPoint,
     sampleSpeedCurve,
     type TimedIntervalWithSpeed,
@@ -296,7 +296,7 @@ export function createChartOverlay(
                 {
                     fallbackSpeed: data.config.talkingSpeed,
                     rampDuration: data.config.rampDurationSeconds,
-                    easingFn: easeInOutCubic,
+                    easingFn: EASING,
                 },
             );
 

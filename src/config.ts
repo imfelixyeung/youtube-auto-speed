@@ -1,3 +1,4 @@
+import { easeCubicInOut } from "d3-ease";
 import { BooleanConfig } from "./config/types/boolean";
 import { NumberConfig } from "./config/types/number";
 
@@ -64,3 +65,5 @@ export const ALWAYS_SHOW_CHART = new BooleanConfig({
 });
 
 export const BOOST_SPEED = 2.0;
+
+export const EASING = easeCubicInOut;

@@ -1,16 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import {
-    clamp01,
-    computeSpeedAtTime,
-    easeInOutCubic,
-    sampleSpeedCurve,
-} from "./speed-curve";
+import { easeCubicInOut } from "d3-ease";
+import { clamp01, computeSpeedAtTime, sampleSpeedCurve } from "./speed-curve";
 
 const fallback = 1;
 const baseConfig = {
     fallbackSpeed: fallback,
     rampDuration: 1,
-    easingFn: easeInOutCubic,
+    easingFn: easeCubicInOut,
 };
 
 describe("clamp01", () => {
@@ -20,18 +16,6 @@ describe("clamp01", () => {
         expect(clamp01(0.5)).toBe(0.5);
         expect(clamp01(1)).toBe(1);
         expect(clamp01(2)).toBe(1);
-    });
-});
-
-describe("easeInOutCubic", () => {
-    test("is anchored at the endpoints", () => {
-        expect(easeInOutCubic(0)).toBe(0);
-        expect(easeInOutCubic(1)).toBe(1);
-    });
-
-    test("is symmetric around the midpoint", () => {
-        expect(easeInOutCubic(0.5)).toBeCloseTo(0.5);
-        expect(easeInOutCubic(0.25)).toBeCloseTo(1 - easeInOutCubic(0.75));
     });
 });
 
