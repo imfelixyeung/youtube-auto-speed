@@ -1,8 +1,15 @@
 {
     "name": "@imfelixyeung/youtube-auto-speed",
-    "version": "0.0.1",
-    "private": true,
+    "version": "0.0.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/imfelixyeung/youtube-auto-speed"
+    },
+    "private": false,
     "type": "module",
+    "scripts": {
+        "prepack": "make && jq 'del(.dependencies, .devDependencies, .peerDependencies)' package.json > package.json.tmp && mv package.json.tmp package.json"
+    },
     "devDependencies": {
         "@biomejs/biome": "2.5.12",
         "@tailwindcss/cli": "^4.3.3",
