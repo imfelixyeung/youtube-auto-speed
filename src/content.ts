@@ -37,6 +37,7 @@ import type {
     EasingFunction,
     TimedText,
 } from "./types";
+import { clamp } from "./utils/clamp";
 
 (() => {
     const config: AutoSpeedConfig = {
@@ -91,6 +92,10 @@ import type {
     let captionVersion = 0;
     let currentVideoId: string | null = null;
     let x2speed: {
+        overlay: HTMLElement;
+        observer: MutationObserver;
+    } | null = null;
+    let volumePanel: {
         overlay: HTMLElement;
         observer: MutationObserver;
     } | null = null;
@@ -275,6 +280,9 @@ import type {
     }
 
     function detachVideo() {
+        unlistenX2Speed();
+        unlistenVolumeChange();
+
         if (!video) {
             return;
         }
@@ -296,7 +304,8 @@ import type {
         }
 
         detachVideo();
-        unlistenX2Speed();
+        listenX2Speed();
+        listenVolumeChange();
 
         log("Video attached");
         video = newVideo;
@@ -353,12 +362,49 @@ import type {
         };
     }
 
+    function unlistenVolumeChange() {
+        if (volumePanel === null) return;
+        volumePanel.observer.disconnect();
+        volumePanel = null;
+    }
+
+    /**
+     * This is to respect the YouTube player's volume slider.
+     */
+    function listenVolumeChange() {
+        const overlay = document.querySelector(".ytp-volume-panel");
+        if (!(overlay instanceof HTMLElement)) {
+            return;
+        }
+        const observer = new MutationObserver((mutationList) => {
+            for (const mutation of mutationList) {
+                if (mutation.type !== "attributes" || volumePanel === null) {
+                    continue;
+                }
+
+                const value = volumePanel.overlay?.ariaValueNow;
+                if (value === undefined) continue;
+
+                let volume = Number(volumePanel.overlay?.ariaValueNow);
+                if (!Number.isInteger(volume)) continue;
+                volume = clamp(Math.round(volume / 100), 0, 1);
+
+                volumeTracks.get("normal").speed = volume;
+                volumeTracks.flatten(true);
+            }
+        });
+        observer.observe(overlay, { attributeFilter: ["aria-valuenow"] });
+        volumePanel = {
+            overlay,
+            observer,
+        };
+    }
+
     function checkForVideo() {
         const newVideo = findVideo();
 
         if (newVideo && newVideo !== video) {
             attachVideo(newVideo);
-            listenX2Speed();
         }
 
         attachOverlay();
