@@ -1,3 +1,4 @@
+import { REDACT_PADDING } from "./config";
 import type { TimedInterval } from "./speed-curve";
 import type { TimedText } from "./types";
 
@@ -256,8 +257,8 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
 
             // Add, convert to seconds and add margin.
             intervals.push({
-                start: (start - 100) / 1000,
-                end: (end + 100) / 1000,
+                start: start / 1000 - REDACT_PADDING,
+                end: end / 1000 + REDACT_PADDING,
             });
         });
     }

@@ -19,6 +19,7 @@ import {
     TALKING_SPEED,
 } from "./config";
 import { SpeedController } from "./controllers/speed";
+import { VolumeController } from "./controllers/volume";
 import {
     cacheSmartSkips,
     getCachedSmartSkips,
@@ -121,6 +122,13 @@ import type {
         onApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
     });
 
+    const volume = new VolumeController({
+        getVideo: () => video,
+        getConfig: () => config,
+        getIntervals: () => volumeTracks.flatten().intervals,
+        onApplied: () => void null,
+    });
+
     // Time saved is derived from the cached speed curve, so it only needs a
     // lookup per frame. The DOM only updates when the displayed text actually
     // changes.
@@ -206,6 +214,7 @@ import type {
 
     function tick() {
         updateSpeed();
+        volume.update();
         refreshPlayhead();
 
         if (video && !video.paused && !video.ended && config.enabled) {
@@ -367,6 +376,7 @@ import type {
         volumeTracks.get("redact").intervals =
             captionsToRedactedIntervals(data);
         speedTracks.flatten(true);
+        volumeTracks.flatten(true);
         captionVersion++;
         log(
             `Loaded ${speedTracks.get("silent").intervals.length} caption intervals (${source})`,

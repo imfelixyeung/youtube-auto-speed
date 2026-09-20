@@ -24,23 +24,12 @@ export abstract class AbstractController {
 
     public abstract set(value: number): void;
 
-    public reset(): void {}
+    protected reset(): void {}
 
-    public update() {
-        const video = this.getVideo();
+    protected compute(): number {
         const config = this.getConfig();
-
-        if (!config.enabled || !video) {
-            return;
-        }
-
-        if (video.paused || video.ended) {
-            this.reset();
-            return;
-        }
-
-        const desired = computeSpeedAtTime(
-            video.currentTime,
+        return computeSpeedAtTime(
+            this.getVideo()?.currentTime ?? 0,
             this.getIntervals(),
             {
                 fallbackSpeed: config.talkingSpeed,
@@ -48,7 +37,20 @@ export abstract class AbstractController {
                 easingFn: config.easingFunction.fn,
             },
         );
+    }
 
+    public update() {
+        const video = this.getVideo();
+        const config = this.getConfig();
+
+        if (!config.enabled || !video) return;
+
+        if (video.paused || video.ended) {
+            this.reset();
+            return;
+        }
+
+        const desired = this.compute();
         this.set(desired);
     }
 }
