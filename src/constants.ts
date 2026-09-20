@@ -1,1 +1,1 @@
-export const REDACT_PADDING = 0.1;
+export const REDACT_PADDING = 0.05;
