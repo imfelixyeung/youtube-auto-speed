@@ -5,6 +5,7 @@ ZIP := youtube-auto-speed.zip
 .PHONY: build typecheck test clean zip
 
 build: clean
+	bun run src/manifest.ts
 	bunx @tailwindcss/cli -i src/popup.css -o dist/popup.css
 	bun build $(SRC) --outdir=$(OUT_DIR) --target=browser --minify --sourcemap=linked
 

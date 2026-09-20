@@ -1,5 +1,6 @@
 {
-    "name": "youtube-auto-speed",
+    "name": "@imfelixyeung/youtube-auto-speed",
+    "version": "0.0.1",
     "private": true,
     "type": "module",
     "devDependencies": {
