@@ -78,6 +78,10 @@ export function computeSpeedAtTime(
 
     const { current, previous, next } = findNeighbors(time, intervals);
 
+    if (rampDuration <= 0) {
+        return current?.speed ?? fallbackSpeed;
+    }
+
     if (current) {
         const prevSpeed = previous ? previous.speed : fallbackSpeed;
         const nextSpeed = next ? next.speed : fallbackSpeed;
@@ -85,7 +89,7 @@ export function computeSpeedAtTime(
         let speed = current.speed;
 
         // Ramp IN from previous speed (only if previous speed is lower)
-        if (prevSpeed < current.speed && rampDuration > 0) {
+        if (prevSpeed < current.speed) {
             const rampEnd = current.start + rampDuration;
             if (time < rampEnd) {
                 const progress = (time - current.start) / rampDuration;
@@ -97,7 +101,7 @@ export function computeSpeedAtTime(
         }
 
         // Ramp OUT to next speed (only if next speed is lower)
-        if (nextSpeed < current.speed && rampDuration > 0) {
+        if (nextSpeed < current.speed) {
             const rampStart = current.end - rampDuration;
             if (time >= rampStart) {
                 const progress = (time - rampStart) / rampDuration;
@@ -116,7 +120,7 @@ export function computeSpeedAtTime(
     const nextSpeed = next ? next.speed : fallbackSpeed;
 
     // Transition out of previous interval if previous speed was higher
-    if (previous && prevSpeed > fallbackSpeed && rampDuration > 0) {
+    if (previous && prevSpeed > fallbackSpeed) {
         if (time < previous.end + rampDuration) {
             const progress = (time - previous.end) / rampDuration;
             const easedProgress = easingFn(progress);
