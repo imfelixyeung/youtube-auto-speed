@@ -1,6 +1,8 @@
 import type { TimedInterval, TimedIntervalWithSpeed } from "../speed-curve";
 
 export class Track<I extends TimedInterval = TimedInterval> {
+    static infinite: TimedInterval = { start: -Infinity, end: Infinity };
+
     constructor(
         public name: string,
         public speed: number,

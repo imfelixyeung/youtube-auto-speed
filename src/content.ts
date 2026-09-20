@@ -36,16 +36,13 @@ import type {
 } from "./types";
 
 (() => {
-    const config: AutoSpeedConfig & {
-        talkingSpeedConfig: number;
-        talkingSpeedBoost: number;
-    } = {
+    const config: AutoSpeedConfig = {
         enabled: true,
         alwaysShowChart: ALWAYS_SHOW_CHART.defaultValue,
         rampDurationSeconds: RAMP_DURATION.defaultValue,
         talkingSpeed: TALKING_SPEED.defaultValue,
-        talkingSpeedConfig: TALKING_SPEED.defaultValue,
-        talkingSpeedBoost: BOOST_SPEED,
+        boostSpeed: BOOST_SPEED.defaultValue,
+        boostAt: 0,
         silentSpeed: SILENT_SPEED.defaultValue,
         filterSquareBrackets: FILTER_SQUARE_BRACKETS.defaultValue,
         filterParentheses: FILTER_PARENTHESES.defaultValue,
@@ -59,7 +56,13 @@ import type {
     const speedTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", TALKING_SPEED.defaultValue, []),
+            track: new Track("normal", TALKING_SPEED.defaultValue, [
+                Track.infinite,
+            ]),
+        },
+        {
+            name: "boost",
+            track: new Track("silent", BOOST_SPEED.defaultValue, []),
         },
         {
             name: "silent",
@@ -82,12 +85,20 @@ import type {
     }
 
     const onBoostStart = () => {
-        log(`Boosting speed to ${config.talkingSpeedBoost}x`);
-        setTalkingSpeed(config.talkingSpeedBoost, true);
+        config.boostAt = Date.now();
+        speedTracks.get("boost").intervals = [Track.infinite];
+        speedTracks.flatten(true);
+        updateSpeed();
+        updateChart();
+        log("Boost start");
     };
     const onBoostEnd = () => {
-        log(`Un-boosting speed to ${config.talkingSpeedConfig}x`);
-        setTalkingSpeed(config.talkingSpeedConfig);
+        config.boostAt = 0;
+        speedTracks.get("boost").intervals = [];
+        speedTracks.flatten(true);
+        updateSpeed();
+        updateChart();
+        log(`Boost end`);
     };
 
     const overlay = createChartOverlay(log, {
@@ -462,16 +473,22 @@ import type {
         log(`Ramp duration: ${seconds}s`);
     }
 
-    function setTalkingSpeed(speed: number, isBoost = false) {
+    function setTalkingSpeed(speed: number) {
         config.talkingSpeed = speed;
-        if (!isBoost) {
-            config.talkingSpeedConfig = speed;
-        }
         speedTracks.get("normal").speed = speed;
         speedTracks.flatten(true);
         updateSpeed();
         updateChart();
         log(`Talking speed: ${speed}x`);
+    }
+
+    function setBoostSpeed(speed: number) {
+        config.boostSpeed = speed;
+        speedTracks.get("boost").speed = speed;
+        speedTracks.flatten(true);
+        updateSpeed();
+        updateChart();
+        log(`Boost speed: ${speed}x`);
     }
 
     function setSilentSpeed(speed: number) {
@@ -601,6 +618,7 @@ import type {
     ALWAYS_SHOW_CHART.listen(setAlwaysShowChart);
     RAMP_DURATION.listen(setRampDuration);
     TALKING_SPEED.listen(setTalkingSpeed);
+    BOOST_SPEED.listen(setBoostSpeed);
     SILENT_SPEED.listen(setSilentSpeed);
     SMART_SKIP_SPEED.listen(setSmartSkipSpeed);
     FILTER_SQUARE_BRACKETS.listen((v) =>

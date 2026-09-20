@@ -7,6 +7,8 @@ export type AutoSpeedConfig = {
     alwaysShowChart: boolean;
     rampDurationSeconds: number;
     talkingSpeed: number;
+    boostSpeed: number;
+    boostAt: number;
     silentSpeed: number;
     smartSkipSpeed: number;
     filterSquareBrackets: boolean;
