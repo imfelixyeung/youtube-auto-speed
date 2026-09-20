@@ -462,6 +462,7 @@ import type {
             config.talkingSpeedConfig = speed;
         }
         speedTracks.get("normal").speed = speed;
+        speedTracks.flatten(true);
         updateSpeed();
         updateChart();
         log(`Talking speed: ${speed}x`);
@@ -470,6 +471,7 @@ import type {
     function setSilentSpeed(speed: number) {
         config.silentSpeed = speed;
         speedTracks.get("silent").speed = speed;
+        speedTracks.flatten(true);
         updateSpeed();
         updateChart();
         log(`Silent speed: ${speed}x`);
