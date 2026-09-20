@@ -282,6 +282,8 @@ export function createChartOverlay(
             data.captionVersion,
             duration.toFixed(3),
             data.config.talkingSpeed,
+            data.config.boostSpeed,
+            data.config.boostAt,
             data.config.silentSpeed,
             data.config.smartSkipSpeed,
             data.config.rampDurationSeconds,
@@ -318,6 +320,7 @@ export function createChartOverlay(
             if (yScale) {
                 const speeds = [
                     data.config.talkingSpeed,
+                    data.config.boostSpeed,
                     data.config.silentSpeed,
                     data.config.smartSkipSpeed,
                 ];
