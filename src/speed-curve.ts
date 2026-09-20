@@ -76,16 +76,22 @@ export function computeSpeedAtTime(
         const prevSpeed = previous ? previous.speed : fallbackSpeed;
         const nextSpeed = next ? next.speed : fallbackSpeed;
 
-        let speed = current.speed;
+        let currentSpeed = current.speed;
+        let speed = currentSpeed;
         const currentMid = (current.start + current.end) / 2;
         const currentDuration = current.end - current.start;
-        const needRamIn = prevSpeed < current.speed;
-        const needRamOut = nextSpeed < current.speed;
+        const needRampIn = prevSpeed < current.speed;
+        const needRampOut = nextSpeed < current.speed;
+
+        // Override the current speed if the bump is too much.
+        if (needRampIn && needRampOut && currentDuration < rampDuration) {
+            currentSpeed = currentSpeed * (currentDuration / rampDuration);
+        }
 
         // Ramp IN from previous speed (only if previous speed is lower)
-        if (needRamIn) {
+        if (needRampIn) {
             const effectiveRamp = Math.min(
-                needRamOut ? currentMid - current.start : currentDuration,
+                needRampOut ? currentMid - current.start : currentDuration,
                 rampDuration,
             );
             const rampEnd = current.start + effectiveRamp;
@@ -93,15 +99,15 @@ export function computeSpeedAtTime(
                 const progress = (time - current.start) / effectiveRamp;
                 const easedProgress = easingFn(progress);
                 const rampSpeed =
-                    prevSpeed + easedProgress * (current.speed - prevSpeed);
+                    prevSpeed + easedProgress * (currentSpeed - prevSpeed);
                 speed = Math.min(speed, rampSpeed);
             }
         }
 
         // Ramp OUT to next speed (only if next speed is lower)
-        if (needRamOut) {
+        if (needRampOut) {
             const effectiveRamp = Math.min(
-                needRamIn ? current.end - currentMid : currentDuration,
+                needRampIn ? current.end - currentMid : currentDuration,
                 rampDuration,
             );
             const rampStart = current.end - effectiveRamp;
@@ -109,7 +115,7 @@ export function computeSpeedAtTime(
                 const progress = (time - rampStart) / effectiveRamp;
                 const easedProgress = easingFn(progress);
                 const rampSpeed =
-                    current.speed - easedProgress * (current.speed - nextSpeed);
+                    currentSpeed - easedProgress * (currentSpeed - nextSpeed);
                 speed = Math.min(speed, rampSpeed);
             }
         }
