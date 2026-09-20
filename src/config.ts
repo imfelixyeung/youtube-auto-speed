@@ -2,6 +2,7 @@ import { BooleanConfig } from "./config/types/boolean";
 import { NumberConfig } from "./config/types/number";
 
 export const ENABLED = new BooleanConfig({
+    displayName: "Enable auto speed",
     storageKey: "enabled",
     defaultValue: true,
 });
@@ -9,6 +10,7 @@ export const ENABLED = new BooleanConfig({
 export const SPEED_STEP = 0.05;
 
 export const RAMP_DURATION = new NumberConfig({
+    displayName: "Ramp duration (s)",
     storageKey: "rampDuration",
     defaultValue: 5,
     min: 0.5,
@@ -17,6 +19,7 @@ export const RAMP_DURATION = new NumberConfig({
 });
 
 export const TALKING_SPEED = new NumberConfig({
+    displayName: "Talking speed (x)",
     storageKey: "talkingSpeed",
     defaultValue: 1,
     min: 0.25,
@@ -25,6 +28,7 @@ export const TALKING_SPEED = new NumberConfig({
 });
 
 export const SILENT_SPEED = new NumberConfig({
+    displayName: "Silent speed (x)",
     storageKey: "silentSpeed",
     defaultValue: 2,
     min: 0.25,
@@ -35,16 +39,19 @@ export const SILENT_SPEED = new NumberConfig({
 export const DEFAULT_SMART_SKIP_SPEED = 3;
 
 export const FILTER_SQUARE_BRACKETS = new BooleanConfig({
+    displayName: "Filter out [...]",
     storageKey: "filterSquareBrackets",
     defaultValue: true,
 });
 
 export const FILTER_PARENTHESES = new BooleanConfig({
+    displayName: "Filter out (...)",
     storageKey: "filterParentheses",
     defaultValue: false,
 });
 
 export const ALWAYS_SHOW_CHART = new BooleanConfig({
+    displayName: "Always show speed chart",
     storageKey: "alwaysShowChart",
     defaultValue: false,
 });

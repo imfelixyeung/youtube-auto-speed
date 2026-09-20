@@ -1,11 +1,13 @@
 import { Emitter, type Listener } from "strict-event-emitter";
 
 export type ConfigTypeProps<T> = {
+    displayName: string;
     storageKey: string;
     defaultValue: T;
 };
 
 export abstract class ConfigType<T> {
+    public displayName: string;
     public storageKey: string;
     public value: T;
     public defaultValue: T;
@@ -14,16 +16,22 @@ export abstract class ConfigType<T> {
     }>();
 
     constructor(props: ConfigTypeProps<T>) {
+        this.displayName = props.displayName;
         this.storageKey = props.storageKey;
         this.defaultValue = props.defaultValue;
         this.value = this.defaultValue;
 
+        const handleStorageValue = (value: T) => {
+            if (value === undefined) return;
+            this.setWithoutSaving(value);
+        };
+
         chrome.storage.sync.get([this.storageKey], (result) => {
-            this.setWithoutSaving(result[this.storageKey] as T);
+            handleStorageValue(result[this.storageKey] as T);
         });
         chrome.storage.onChanged.addListener((changes, areaName) => {
             if (areaName !== "sync") return;
-            this.setWithoutSaving(changes[this.storageKey]?.newValue as T);
+            handleStorageValue(changes[this.storageKey]?.newValue as T);
         });
     }
 
@@ -42,5 +50,23 @@ export abstract class ConfigType<T> {
         this.emitter.addListener("change", listener);
     }
 
-    public abstract attachToElement(element: HTMLElement): void;
+    public addFormElement(): [HTMLElement, HTMLInputElement] {
+        const id = `config-${this.storageKey}`;
+
+        const label = document.createElement("label");
+        label.htmlFor = id;
+        label.className = "label row";
+
+        const span = document.createElement("span");
+        span.innerText = this.displayName;
+
+        const input = document.createElement("input");
+        input.id = id;
+
+        label.appendChild(span);
+        label.appendChild(input);
+        return [label, input];
+    }
+
+    public abstract attachToElement(element: HTMLInputElement): void;
 }

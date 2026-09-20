@@ -13,61 +13,7 @@
             </p>
         </header>
 
-        <label class="label row" for="enabled-toggle">
-            <span>Enable auto speed</span>
-            <input type="checkbox" id="enabled-toggle" class="toggle" />
-        </label>
-
-        <label class="label row" for="always-show-chart-toggle">
-            <span>Always show speed chart</span>
-            <input
-                type="checkbox"
-                id="always-show-chart-toggle"
-                class="toggle"
-            />
-        </label>
-
-        <label class="label row" for="filter-brackets-toggle">
-            <span>Filter out [...]</span>
-            <input type="checkbox" id="filter-brackets-toggle" class="toggle" />
-        </label>
-
-        <label class="label row" for="filter-parens-toggle">
-            <span>Filter out (...)</span>
-            <input type="checkbox" id="filter-parens-toggle" class="toggle" />
-        </label>
-
-        <label class="label row" for="ramp-duration">
-            <span>Ramp duration (s)</span>
-            <input
-                type="number"
-                id="ramp-duration"
-                class="input input-sm w-16"
-                min="0.5"
-                max="30"
-                step="0.5"
-            />
-        </label>
-
-        <label class="label row" for="talking-speed">
-            <span>Talking speed (x)</span>
-            <input
-                type="number"
-                id="talking-speed"
-                class="input input-sm w-16"
-                inputmode="decimal"
-            />
-        </label>
-
-        <label class="label row" for="silent-speed">
-            <span>Silent speed (x)</span>
-            <input
-                type="number"
-                id="silent-speed"
-                class="input input-sm w-16"
-                inputmode="decimal"
-            />
-        </label>
+        <div id="config"></div>
 
         <script src="./popup.ts"></script>
     </body>

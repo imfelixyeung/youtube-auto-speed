@@ -35,10 +35,21 @@ export class NumberConfig extends ConfigType<NumberConfigType> {
         element.max = String(this.max);
         element.step = String(this.step);
         element.value = String(this.value);
+        element.type = "number";
+        element.inputMode = "decimal";
+        element.className = "input input-sm w-16";
         element.addEventListener("change", () => {
             const value = Number(element.value);
             this.set(value);
             if (this.value !== value) element.value = String(this.value);
+        });
+
+        this.listen((v) => {
+            const newValue = String(v);
+            if (element.value === newValue) {
+                return;
+            }
+            element.value = newValue;
         });
     }
 }
