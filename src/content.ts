@@ -14,9 +14,11 @@ import {
     FILTER_SQUARE_BRACKETS,
     RAMP_DURATION,
     SILENT_SPEED,
+    SKIP_SEGMENTS_SPEED,
     SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
+import { getSkipSegments, type SkipSegment } from "./skip-segments/api";
 import {
     cacheSmartSkips,
     getCachedSmartSkips,
@@ -48,6 +50,7 @@ import type {
         filterSquareBrackets: FILTER_SQUARE_BRACKETS.defaultValue,
         filterParentheses: FILTER_PARENTHESES.defaultValue,
         smartSkipSpeed: SMART_SKIP_SPEED.defaultValue,
+        skipSegmentsSpeed: SKIP_SEGMENTS_SPEED.defaultValue,
         easingFunction: {
             value: EASING_FUNCTION.defaultValue,
             fn: EASING_FUNCTION.defaultMappedValue,
@@ -72,6 +75,14 @@ import type {
         {
             name: "smartSkip",
             track: new Track("smartSkip", SMART_SKIP_SPEED.defaultValue, []),
+        },
+        {
+            name: "skipSegments",
+            track: new Track(
+                "skipSegments",
+                SKIP_SEGMENTS_SPEED.defaultValue,
+                [],
+            ),
         },
     ]);
     let captionVersion = 0;
@@ -178,10 +189,11 @@ import type {
     }
 
     function updateBadgeCaptionState() {
-        // Gray out the badge when the extension is active but the current
-        // video has no captions to drive the auto speed.
         overlay.setBadgeActive(
-            config.enabled && speedTracks.get("silent").intervals.length > 0,
+            config.enabled &&
+                (speedTracks.get("silent").intervals.length > 0 ||
+                    speedTracks.get("smartSkip").intervals.length > 0 ||
+                    speedTracks.get("skipSegments").intervals.length > 0),
         );
     }
 
@@ -337,6 +349,7 @@ import type {
         if (newVideo && newVideo !== video) {
             attachVideo(newVideo);
             listenX2Speed();
+            initSkipSegments();
         }
 
         attachOverlay();
@@ -374,6 +387,24 @@ import type {
         updateBadgeCaptionState();
     }
 
+    function applySkipSegments(data: SkipSegment[] | null) {
+        data = data ?? [];
+        speedTracks.get("skipSegments").intervals = data.map((seg) => {
+            const [start, end] = seg.segment;
+            return { start, end };
+        });
+        speedTracks.flatten(true);
+        log(`Loaded ${data.length} skip segments intervals`, data);
+        updateSpeed();
+        updateChart();
+        updateBadgeCaptionState();
+    }
+
+    function initSkipSegments() {
+        if (currentVideoId)
+            getSkipSegments(currentVideoId).then(applySkipSegments);
+    }
+
     /**
      * YouTube is an SPA, so a navigation can swap videos without any caption
      * request for the new one (e.g. it has no subtitles). Drop stale intervals
@@ -387,7 +418,9 @@ import type {
         }
 
         currentVideoId = nextVideoId;
+        speedTracks.get("silent").intervals = [];
         speedTracks.get("smartSkip").intervals = [];
+        speedTracks.get("skipSegments").intervals = [];
         speedTracks.flatten(true);
 
         const smartSkips = getCachedSmartSkips(currentVideoId ?? "");
@@ -404,6 +437,8 @@ import type {
             applyCaptions(cached, "cache");
             return;
         }
+
+        initSkipSegments();
 
         captionVersion++;
 
@@ -496,6 +531,15 @@ import type {
 
     function setSmartSkipSpeed(speed: number) {
         setSpeed("Smart skip speed", "smartSkipSpeed", "smartSkip", speed);
+    }
+
+    function setSkipSegmentsSpeed(speed: number) {
+        setSpeed(
+            "Skip segments speed",
+            "skipSegmentsSpeed",
+            "skipSegments",
+            speed,
+        );
     }
 
     function setEasingFunction(value: string, fn: EasingFunction) {
@@ -610,6 +654,7 @@ import type {
     BOOST_SPEED.listen(setBoostSpeed);
     SILENT_SPEED.listen(setSilentSpeed);
     SMART_SKIP_SPEED.listen(setSmartSkipSpeed);
+    SKIP_SEGMENTS_SPEED.listen(setSkipSegmentsSpeed);
     FILTER_SQUARE_BRACKETS.listen((v) =>
         setNonSpeechFilter(v, FILTER_PARENTHESES.value),
     );

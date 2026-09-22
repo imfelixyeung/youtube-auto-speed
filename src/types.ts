@@ -2,11 +2,12 @@ import type { VideoData } from "./schemas/video-data";
 
 export type EasingFunction = (v: number) => number;
 
-const autoSpeedConfigSpeedKeys = [
+export const autoSpeedConfigSpeedKeys = [
     "talkingSpeed",
     "boostSpeed",
     "silentSpeed",
     "smartSkipSpeed",
+    "skipSegmentsSpeed",
 ] as const;
 export type AutoSpeedConfigSpeedKey = (typeof autoSpeedConfigSpeedKeys)[number];
 

@@ -7,6 +7,7 @@ import {
     FILTER_SQUARE_BRACKETS,
     RAMP_DURATION,
     SILENT_SPEED,
+    SKIP_SEGMENTS_SPEED,
     SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
@@ -23,6 +24,7 @@ const configs = [
     BOOST_SPEED,
     SILENT_SPEED,
     SMART_SKIP_SPEED,
+    SKIP_SEGMENTS_SPEED,
     EASING_FUNCTION,
 ];
 

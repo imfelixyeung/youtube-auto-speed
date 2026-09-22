@@ -20,15 +20,15 @@ The source of truth for speech detection is caption data streamed in YouTube's t
 
 Configured from the extension popup and synced across devices via `chrome.storage.sync`:
 
-| Setting           | Default | Range    | Notes                                    |
-| ----------------- | ------- | -------- | ---------------------------------------- |
-| Enable auto speed | on      | —        | Global on/off                            |
-| Always show speed chart | off | —    | Keep the speed chart visible at all times |
-| Filter out [...]  | on      | —        | Treat bracketed labels (e.g. `[music]`) as non-speech |
-| Filter out (...)  | off     | —        | Treat parenthesised asides as non-speech |
-| Ramp duration     | 5s      | 0.5–300s | Time to ease between speeds              |
-| Talking speed     | 1x      | 0.25–4x  | Speed while someone is speaking          |
-| Silent speed      | 2x      | 0.25–16x | Speed during silence (must be > talking) |
+| Setting                 | Default | Range    | Notes                                                 |
+| ----------------------- | ------- | -------- | ----------------------------------------------------- |
+| Enable auto speed       | on      | —        | Global on/off                                         |
+| Always show speed chart | off     | —        | Keep the speed chart visible at all times             |
+| Filter out [...]        | on      | —        | Treat bracketed labels (e.g. `[music]`) as non-speech |
+| Filter out (...)        | off     | —        | Treat parenthesised asides as non-speech              |
+| Ramp duration           | 5s      | 0.5–300s | Time to ease between speeds                           |
+| Talking speed           | 1x      | 0.25–4x  | Speed while someone is speaking                       |
+| Silent speed            | 2x      | 0.25–16x | Speed during silence (must be > talking)              |
 
 ## Install (development)
 
@@ -66,3 +66,7 @@ src/
 ├── popup.css         # Popup styles (Tailwind + daisyUI)
 └── content.css       # Overlay styles
 ```
+
+## Attributions
+
+Uses SponsorBlock data licensed used under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) from https://sponsor.ajay.app/.
