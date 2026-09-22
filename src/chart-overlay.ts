@@ -64,6 +64,8 @@ Chart.register(
 );
 
 const MAX_CHART_SAMPLES = 4000;
+const CHART_PAD_TOP = 1.75;
+const REM_PER_SPEED_UNIT = 0.5;
 
 /**
  * Owns the badge + speed-curve chart overlay attached to YouTube's player.
@@ -326,6 +328,11 @@ export function createChartOverlay(
                 ];
                 yScale.min = Math.min(...speeds);
                 yScale.max = Math.max(...speeds);
+
+                if (overlay) {
+                    const diff = yScale.max - yScale.min;
+                    overlay.style.height = `${(CHART_PAD_TOP + diff * REM_PER_SPEED_UNIT).toFixed(2)}rem`;
+                }
             }
 
             cachedChartKey = cacheKey;
