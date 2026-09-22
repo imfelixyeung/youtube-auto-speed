@@ -387,8 +387,7 @@ import type {
         updateBadgeCaptionState();
     }
 
-    function applySkipSegments(data: SkipSegment[] | null) {
-        data = data ?? [];
+    function applySkipSegments(data: SkipSegment[]) {
         speedTracks.get("skipSegments").intervals = data.map((seg) => {
             const [start, end] = seg.segment;
             return { start, end };
