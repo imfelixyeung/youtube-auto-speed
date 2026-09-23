@@ -1,7 +1,7 @@
 import { CacheStore } from "./cache/store";
 import { REDACT_PADDING } from "./constants";
 import type { TimedInterval } from "./curve";
-import type { TimedText } from "./types";
+import type { TimedText, TimedTextEventItem } from "./types";
 
 const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
 
@@ -128,15 +128,7 @@ export function _captionsToIntervals(
     const intervals: TimedInterval[] = [];
 
     for (const event of data.events) {
-        if (!Array.isArray(event.segs)) {
-            continue;
-        }
-
-        if (!Number.isFinite(event.tStartMs)) {
-            continue;
-        }
-
-        if (!Number.isFinite(event.dDurationMs)) {
+        if (!isValidEvent(event)) {
             continue;
         }
 
@@ -196,19 +188,11 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
         return [];
     }
 
-    for (const event of data.events) {
+    data.events.forEach((event) => {
+        if (!isValidEvent(event)) {
+            return;
+        }
         const { segs } = event;
-        if (!Array.isArray(segs)) {
-            continue;
-        }
-
-        if (!Number.isFinite(event.tStartMs)) {
-            continue;
-        }
-
-        if (!Number.isFinite(event.dDurationMs)) {
-            continue;
-        }
 
         segs.forEach((seg, i, segs) => {
             const redact = shouldRedact(seg.utf8);
@@ -227,9 +211,22 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
                 end: end / 1000 + REDACT_PADDING,
             });
         });
-    }
+    });
 
     // Sort by start time.
     intervals.sort((a, b) => a.start - b.start);
     return mergeIntervals(intervals);
+}
+
+function isValidEvent(event: TimedTextEventItem | undefined): event is Omit<
+    TimedTextEventItem,
+    "segs"
+> & {
+    segs: NonNullable<TimedTextEventItem["segs"]>;
+} {
+    if (event === undefined) return false;
+    if (!Array.isArray(event.segs)) return false;
+    if (!Number.isFinite(event.tStartMs)) return false;
+    if (!Number.isFinite(event.dDurationMs)) return false;
+    return true;
 }
