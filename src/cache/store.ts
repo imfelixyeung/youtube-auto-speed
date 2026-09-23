@@ -33,7 +33,7 @@ export class CacheStore<T> {
      */
     public get(key: string): T | null {
         const data = this.cacheMap.get(key);
-        if (data) {
+        if (data !== undefined) {
             this.cacheMap.delete(key);
             this.cacheMap.set(key, data);
         }
