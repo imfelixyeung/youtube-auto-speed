@@ -1,49 +1,15 @@
+import { CacheStore } from "./cache/store";
 import type { TimedInterval } from "./speed-curve";
 import type { TimedText } from "./types";
 
-/**
- * Raw timedtext responses captured per video, so captions stay available
- * even when YouTube serves a previously-loaded video's subtitles from its
- * own caches and never makes another `/api/timedtext` request (meaning the
- * interceptor never fires).
- */
-const TIMED_TEXT_CACHE = new Map<string, TimedText>();
-const MAX_CACHED_VIDEOS = 20;
+const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
 
-/**
- * Store the raw timedtext response for a video. Re-caching the same video
- * (e.g. after a language switch) replaces the earlier entry.
- */
 export function cacheTimedText(videoId: string, data: TimedText) {
-    // Re-insert so the most-recently-used entry sits at the end.
-    TIMED_TEXT_CACHE.delete(videoId);
-    TIMED_TEXT_CACHE.set(videoId, data);
-
-    if (TIMED_TEXT_CACHE.size <= MAX_CACHED_VIDEOS) {
-        return;
-    }
-    const oldest = TIMED_TEXT_CACHE.keys().next().value;
-
-    if (oldest === undefined) {
-        return;
-    }
-
-    TIMED_TEXT_CACHE.delete(oldest);
+    return TIMED_TEXT_CACHE.set(videoId, data);
 }
 
-/**
- * Look up the cached timedtext for a video, or `null` when it has not been
- * captured yet. The entry is refreshed to the back of the cache on access.
- */
 export function getCachedTimedText(videoId: string): TimedText | null {
-    const data = TIMED_TEXT_CACHE.get(videoId);
-
-    if (data) {
-        TIMED_TEXT_CACHE.delete(videoId);
-        TIMED_TEXT_CACHE.set(videoId, data);
-    }
-
-    return data ?? null;
+    return TIMED_TEXT_CACHE.get(videoId);
 }
 
 /**
