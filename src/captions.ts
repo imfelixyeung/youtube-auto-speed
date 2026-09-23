@@ -188,7 +188,7 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
         return [];
     }
 
-    data.events.forEach((event) => {
+    data.events.forEach((event, eventIndex, events) => {
         if (!isValidEvent(event)) {
             return;
         }
@@ -199,16 +199,29 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
             if (!redact) {
                 return;
             }
-            const start = event.tStartMs + (seg.tOffsetMs ?? 0);
+            let start = event.tStartMs + (seg.tOffsetMs ?? 0);
             const nextSeg = segs[i + 1];
-            const end = nextSeg?.tOffsetMs
+            let end = nextSeg?.tOffsetMs
                 ? event.tStartMs + nextSeg?.tOffsetMs
                 : event.tStartMs + event.dDurationMs;
 
+            const nextEvent = events[eventIndex + 1];
+            if (isValidEvent(nextEvent)) {
+                end = Math.min(end, nextEvent.tStartMs);
+            }
+
             // Add, convert to seconds and add margin.
+
+            start = start / 1000 - REDACT_PADDING_START;
+            end = end / 1000 + REDACT_PADDING_END;
+
+            if (start >= end) {
+                return;
+            }
+
             intervals.push({
-                start: start / 1000 - REDACT_PADDING_START,
-                end: end / 1000 + REDACT_PADDING_END,
+                start,
+                end,
             });
         });
     });
