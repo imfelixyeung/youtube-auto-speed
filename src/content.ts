@@ -399,7 +399,7 @@ import { clamp } from "./utils/clamp";
 
                 let volume = Number(volumePanel.overlay?.ariaValueNow);
                 if (!Number.isInteger(volume)) continue;
-                volume = clamp(Math.round(volume / 100), 0, 1);
+                volume = clamp(Math.round(volume) / 100, 0, 1);
 
                 volumeTracks.get("normal").value = volume;
                 volumeTracks.flatten(true);
