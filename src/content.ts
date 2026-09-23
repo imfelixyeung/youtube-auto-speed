@@ -142,7 +142,8 @@ import { clamp } from "./utils/clamp";
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => volumeTracks.flatten().intervals,
-        onApplied: (volume) => overlay.setVolumeBadgeText(`${volume * 100}%`),
+        onApplied: (volume) =>
+            overlay.setVolumeBadgeText(`${(volume * 100).toFixed()}%`),
     });
 
     // Time saved is derived from the cached speed curve, so it only needs a
