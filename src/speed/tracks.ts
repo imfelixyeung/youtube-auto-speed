@@ -7,6 +7,7 @@ export class Track<I extends TimedInterval = TimedInterval> {
         public name: string,
         public value: number,
         public intervals: I[],
+        public enabled = true,
     ) {}
 
     public static empty<I extends TimedInterval = TimedInterval>() {
@@ -99,6 +100,7 @@ export class Tracks<T extends string> {
         this.flattened = Track.empty();
 
         for (const { track } of this.tracks) {
+            if (!track.enabled) continue;
             for (const interval of track.intervals) {
                 this.flattened.addInterval({ ...interval, value: track.value });
             }

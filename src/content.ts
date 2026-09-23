@@ -14,6 +14,8 @@ import {
     FILTER_PARENTHESES,
     FILTER_SQUARE_BRACKETS,
     RAMP_DURATION,
+    REDACT_ENABLED,
+    REDACT_VOLUME,
     SILENT_SPEED,
     SKIP_SEGMENTS_SPEED,
     SMART_SKIP_SPEED,
@@ -58,6 +60,10 @@ import { clamp } from "./utils/clamp";
             value: EASING_FUNCTION.defaultValue,
             fn: EASING_FUNCTION.defaultMappedValue,
         },
+        redact: {
+            enabled: REDACT_ENABLED.defaultValue,
+            volume: REDACT_VOLUME.defaultValue,
+        },
     };
     let video: HTMLVideoElement | null = null;
     const speedTracks = new Tracks([
@@ -97,7 +103,7 @@ import { clamp } from "./utils/clamp";
         },
         {
             name: "redact",
-            track: new Track("redact", 0, []),
+            track: new Track("redact", REDACT_VOLUME.defaultValue, []),
         },
     ]);
     let captionVersion = 0;
@@ -736,6 +742,18 @@ import { clamp } from "./utils/clamp";
     EASING_FUNCTION.listen(() =>
         setEasingFunction(EASING_FUNCTION.value, EASING_FUNCTION.mappedValue),
     );
+    REDACT_ENABLED.listen((enabled) => {
+        config.redact.enabled = enabled;
+        volumeTracks.get("redact").enabled = enabled;
+        volumeTracks.flatten(true);
+        volume.update();
+    });
+    REDACT_VOLUME.listen((value) => {
+        config.redact.volume = value;
+        volumeTracks.get("redact").value = value;
+        volumeTracks.flatten(true);
+        volume.update();
+    });
 
     log("Initialized");
 })();
