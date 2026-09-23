@@ -1,5 +1,5 @@
 import { CacheStore } from "./cache/store";
-import { REDACT_PADDING } from "./constants";
+import { REDACT_PADDING_END, REDACT_PADDING_START } from "./constants";
 import type { TimedInterval } from "./curve";
 import type { TimedText, TimedTextEventItem } from "./types";
 
@@ -207,8 +207,8 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
 
             // Add, convert to seconds and add margin.
             intervals.push({
-                start: start / 1000 - REDACT_PADDING,
-                end: end / 1000 + REDACT_PADDING,
+                start: start / 1000 - REDACT_PADDING_START,
+                end: end / 1000 + REDACT_PADDING_END,
             });
         });
     });

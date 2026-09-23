@@ -1,5 +1,5 @@
 import { easeLinear } from "d3-ease";
-import { REDACT_PADDING } from "../constants";
+import { REDACT_RAMP_DURATION } from "../constants";
 import { computeValueAtTime } from "../curve";
 import { AbstractController } from ".";
 
@@ -23,7 +23,7 @@ export class VolumeController extends AbstractController {
             this.getIntervals(),
             {
                 fallback: 1,
-                rampDuration: REDACT_PADDING,
+                rampDuration: REDACT_RAMP_DURATION,
                 easingFn: easeLinear,
             },
         );
