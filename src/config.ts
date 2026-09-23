@@ -64,6 +64,15 @@ export const SMART_SKIP_SPEED = new NumberConfig({
     step: SPEED_STEP,
 });
 
+export const SKIP_SEGMENTS_SPEED = new NumberConfig({
+    displayName: "Skip segments speed (x)",
+    storageKey: "skipSegmentsSpeed",
+    defaultValue: 3,
+    min: 0.25,
+    max: 16,
+    step: SPEED_STEP,
+});
+
 export const FILTER_SQUARE_BRACKETS = new BooleanConfig({
     displayName: "Filter out [...]",
     storageKey: "filterSquareBrackets",
