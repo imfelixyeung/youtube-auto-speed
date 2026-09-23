@@ -20,7 +20,7 @@ import {
     type TimeSavedPoint,
     timeSavedAt,
 } from "./time-saved";
-import type { AutoSpeedConfig } from "./types";
+import { type AutoSpeedConfig, autoSpeedConfigSpeedKeys } from "./types";
 import { cssVar } from "./utils";
 
 export type ChartData = {
@@ -276,6 +276,7 @@ export function createChartOverlay(
             return;
         }
 
+        const speeds = autoSpeedConfigSpeedKeys.map((k) => data.config[k]);
         // Only resample and rerender when captions, duration, or speed config
         // actually change. Otherwise the point data is identical, and calling
         // `chart.update` again would redundantly re-render on every player DOM
@@ -283,13 +284,10 @@ export function createChartOverlay(
         const cacheKey = [
             data.captionVersion,
             duration.toFixed(3),
-            data.config.talkingSpeed,
-            data.config.boostSpeed,
             data.config.boostAt,
-            data.config.silentSpeed,
-            data.config.smartSkipSpeed,
             data.config.rampDurationSeconds,
             data.config.easingFunction.value,
+            ...speeds,
         ].join("|");
 
         if (cacheKey !== cachedChartKey) {
@@ -320,12 +318,6 @@ export function createChartOverlay(
                 | undefined;
 
             if (yScale) {
-                const speeds = [
-                    data.config.talkingSpeed,
-                    data.config.boostSpeed,
-                    data.config.silentSpeed,
-                    data.config.smartSkipSpeed,
-                ];
                 yScale.min = Math.min(...speeds);
                 yScale.max = Math.max(...speeds);
 
