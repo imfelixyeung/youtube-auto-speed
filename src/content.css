@@ -59,11 +59,7 @@
         }
     }
 
-    .auto-speed-chart {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
+    .auto-speed-chart-wrapper {
         opacity: 0;
         transition:
             opacity 0.15s ease,
@@ -71,18 +67,32 @@
             border-bottom 0.15s ease;
         border-top: 0 solid var(--auto-speed-gradient-from);
         border-bottom: var(--auto-speed-bar-height) solid transparent;
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.1) 0%,
-            rgba(255, 255, 255, 0) 100%
-        );
-        background-repeat: no-repeat;
+        height: 100%;
+
+        .auto-speed-chart {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transition:
+                border-top 0.15s ease,
+                border-bottom 0.15s ease;
+            border-top: 0 solid transparent;
+            border-bottom: var(--auto-speed-bar-height) solid transparent;
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            background-repeat: no-repeat;
+            translate: 0 -0.5px;
+        }
     }
 
     &:not(.ytp-autohide),
     &.paused-mode .auto-speed-overlay:hover,
     &.auto-speed-always-chart {
-        .auto-speed-chart {
+        .auto-speed-chart-wrapper {
             opacity: 1;
         }
 
@@ -91,10 +101,14 @@
             border-radius: 0 0 0 0;
         }
 
-        .auto-speed-chart {
+        .auto-speed-chart-wrapper {
             border-top: var(--auto-speed-bar-height) solid
                 var(--auto-speed-gradient-from);
             border-bottom: 0 solid transparent;
+            .auto-speed-chart {
+                border-top: var(--auto-speed-bar-height) solid transparent;
+                border-bottom: 0 solid transparent;
+            }
         }
     }
 }
