@@ -216,10 +216,14 @@ export function createChartOverlay(
             const canvas = document.createElement("canvas");
             canvas.className = "auto-speed-chart";
             canvas.setAttribute("data-auto-speed-chart", "");
+            const canvasWrapper = document.createElement("div");
+            canvasWrapper.className = "auto-speed-chart-wrapper";
+            canvasWrapper.append(canvas);
+
             overlay = document.createElement("div");
             overlay.className = "auto-speed-overlay";
             overlay.setAttribute("data-auto-speed-overlay", "");
-            overlay.appendChild(canvas);
+            overlay.appendChild(canvasWrapper);
             overlay.appendChild(createStatusBar());
             chart = createChart(canvas);
             overlay.addEventListener("mouseenter", () => {
