@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
-import type { TimedInterval, TimedIntervalWithNumberValue } from "../curve";
+import type { TimedInterval, TimedIntervalWithData } from "../curve";
 import { Track, Tracks } from "./tracks";
 
 describe("Track", () => {
     describe("static empty()", () => {
         it("creates an empty track with default values", () => {
-            const track = Track.empty();
+            const track = Track.empty(null);
             expect(track.name).toBe("");
             expect(track.data).toBe(null);
             expect(track.intervals).toEqual([]);
@@ -14,7 +14,7 @@ describe("Track", () => {
 
     describe("addInterval()", () => {
         it("adds an interval to an empty track", () => {
-            const track = Track.empty();
+            const track = Track.empty(null);
             const interval: TimedInterval = { start: 0, end: 10 };
 
             track.addInterval(interval);
@@ -177,9 +177,9 @@ describe("Tracks", () => {
 
             const result = tracks.flatten();
 
-            expect(result.intervals).toEqual<TimedIntervalWithNumberValue[]>([
-                { start: 0, end: 5, value: 1.5 },
-                { start: 5, end: 15, value: 2.0 },
+            expect(result.intervals).toEqual<TimedIntervalWithData<number>[]>([
+                { start: 0, end: 5, data: 1.5 },
+                { start: 5, end: 15, data: 2.0 },
             ]);
 
             consoleSpy.mockRestore();

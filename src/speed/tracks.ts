@@ -1,18 +1,16 @@
-import type { TimedInterval, TimedIntervalWithValue } from "../curve";
+import type { TimedInterval, TimedIntervalWithData } from "../curve";
 
 export class Track<D, I extends TimedInterval = TimedInterval> {
     static infinite: TimedInterval = { start: -Infinity, end: Infinity };
 
     constructor(
         public name: string,
-        public data: D | null,
+        public data: D,
         public intervals: I[],
         public enabled = true,
     ) {}
 
-    public static empty<D, I extends TimedInterval = TimedInterval>(
-        value: D | null = null,
-    ) {
+    public static empty<D, I extends TimedInterval = TimedInterval>(value: D) {
         return new Track<D, I>("", value, []);
     }
 
@@ -77,7 +75,7 @@ export class Track<D, I extends TimedInterval = TimedInterval> {
 
 export class Tracks<D, T extends string> {
     private trackMap: Map<T, Track<D, TimedInterval>>;
-    private flattened: Track<D, TimedIntervalWithValue<D>> | null = null;
+    private flattened: Track<null, TimedIntervalWithData<D>> | null = null;
     constructor(
         public tracks: {
             name: T;
@@ -96,18 +94,18 @@ export class Tracks<D, T extends string> {
         return track;
     }
 
-    flatten(recalculate = false): Track<D, TimedIntervalWithValue<D>> {
+    flatten(recalculate = false): Track<null, TimedIntervalWithData<D>> {
         if (this.flattened && !recalculate) {
             return this.flattened;
         }
 
-        this.flattened = Track.empty<D, TimedIntervalWithValue<D>>(null);
+        this.flattened = Track.empty<null, TimedIntervalWithData<D>>(null);
 
         for (const { track } of this.tracks) {
             if (!track.enabled) continue;
             for (const interval of track.intervals) {
                 if (track.data === null) continue;
-                this.flattened.addInterval({ ...interval, value: track.data });
+                this.flattened.addInterval({ ...interval, data: track.data });
             }
         }
 

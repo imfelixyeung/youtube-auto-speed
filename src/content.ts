@@ -70,27 +70,56 @@ import { clamp } from "./utils/clamp";
     const speedTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", TALKING_SPEED.defaultValue, [
-                Track.infinite,
-            ]),
+            track: new Track(
+                "normal",
+                {
+                    label: "Normal Speed",
+                    value: TALKING_SPEED.defaultValue,
+                },
+                [Track.infinite],
+            ),
         },
         {
             name: "boost",
-            track: new Track("silent", BOOST_SPEED.defaultValue, []),
+            track: new Track(
+                "boost",
+                {
+                    label: "Boost",
+                    value: BOOST_SPEED.defaultValue,
+                },
+                [],
+            ),
         },
         {
             name: "silent",
-            track: new Track("silent", SILENT_SPEED.defaultValue, []),
+            track: new Track(
+                "silent",
+                {
+                    label: "Silent",
+                    value: SILENT_SPEED.defaultValue,
+                },
+                [],
+            ),
         },
         {
             name: "smartSkip",
-            track: new Track("smartSkip", SMART_SKIP_SPEED.defaultValue, []),
+            track: new Track(
+                "smartSkip",
+                {
+                    label: "Smart Skip",
+                    value: SMART_SKIP_SPEED.defaultValue,
+                },
+                [],
+            ),
         },
         {
             name: "skipSegments",
             track: new Track(
                 "skipSegments",
-                SKIP_SEGMENTS_SPEED.defaultValue,
+                {
+                    label: "Skip Segments",
+                    value: SKIP_SEGMENTS_SPEED.defaultValue,
+                },
                 [],
             ),
         },
@@ -98,13 +127,17 @@ import { clamp } from "./utils/clamp";
     const volumeTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", 1, [
+            track: new Track("normal", { label: "Normal", value: 1 }, [
                 { start: -Infinity, end: Infinity },
             ]),
         },
         {
             name: "redact",
-            track: new Track("redact", REDACT_VOLUME.defaultValue, []),
+            track: new Track(
+                "redact",
+                { label: "Redact", value: REDACT_VOLUME.defaultValue },
+                [],
+            ),
         },
     ]);
     let captionVersion = 0;
@@ -410,7 +443,7 @@ import { clamp } from "./utils/clamp";
                 if (!Number.isInteger(volume)) continue;
                 volume = clamp(Math.round(volume) / 100, 0, 1);
 
-                volumeTracks.get("normal").data = volume;
+                volumeTracks.get("normal").data.value = volume;
                 volumeTracks.flatten(true);
             }
         });
@@ -590,7 +623,7 @@ import { clamp } from "./utils/clamp";
         speed: number,
     ) {
         config[configKey] = speed;
-        speedTracks.get(track).data = speed;
+        speedTracks.get(track).data.value = speed;
         speedTracks.flatten(true);
         updateSpeed();
         updateChart();
@@ -756,7 +789,7 @@ import { clamp } from "./utils/clamp";
     });
     REDACT_VOLUME.listen((value) => {
         config.redact.volume = value;
-        volumeTracks.get("redact").data = value;
+        volumeTracks.get("redact").data.value = value;
         volumeTracks.flatten(true);
         volume.update();
     });

@@ -1,19 +1,16 @@
-import {
-    computeValueAtTime,
-    type TimedIntervalWithNumberValue,
-} from "../curve";
+import { computeValueAtTime, type TimedIntervalWithNumberData } from "../curve";
 import type { AutoSpeedConfig } from "../types";
 
 export abstract class AbstractController {
     protected getVideo: () => HTMLVideoElement | null;
     protected getConfig: () => AutoSpeedConfig;
-    protected getIntervals: () => TimedIntervalWithNumberValue[];
+    protected getIntervals: () => TimedIntervalWithNumberData[];
     protected onApplied: (value: number) => void;
 
     constructor(props: {
         getVideo: () => HTMLVideoElement | null;
         getConfig: () => AutoSpeedConfig;
-        getIntervals: () => TimedIntervalWithNumberValue[];
+        getIntervals: () => TimedIntervalWithNumberData[];
         onApplied: (rounded: number) => void;
     }) {
         this.getVideo = props.getVideo;

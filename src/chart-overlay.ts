@@ -10,7 +10,7 @@ import {
 } from "chart.js";
 import {
     sampleCurve,
-    type TimedIntervalWithNumberValue,
+    type TimedIntervalWithNumberData,
     type ValuePoint,
 } from "./curve";
 import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
@@ -25,7 +25,7 @@ import { cssVar } from "./utils";
 
 export type ChartData = {
     video: HTMLVideoElement | null;
-    intervals: TimedIntervalWithNumberValue[];
+    intervals: TimedIntervalWithNumberData[];
     captionVersion: number;
     config: AutoSpeedConfig;
 };

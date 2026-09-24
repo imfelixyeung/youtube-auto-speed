@@ -5,8 +5,11 @@ export type TimedInterval = {
     end: number;
 };
 
-export type TimedIntervalWithValue<T> = TimedInterval & { value: T };
-export type TimedIntervalWithNumberValue = TimedIntervalWithValue<number>;
+export type TimedIntervalWithData<T> = TimedInterval & { data: T };
+export type TimedIntervalWithNumberData = TimedIntervalWithData<{
+    label: string;
+    value: number;
+}>;
 
 export type EasingFn = (t: number) => number;
 
@@ -15,18 +18,18 @@ export function clamp01(value: number) {
 }
 
 export type Neighbors = {
-    current: TimedIntervalWithNumberValue | null;
-    previous: TimedIntervalWithNumberValue | null;
-    next: TimedIntervalWithNumberValue | null;
+    current: TimedIntervalWithNumberData | null;
+    previous: TimedIntervalWithNumberData | null;
+    next: TimedIntervalWithNumberData | null;
 };
 
 export function findNeighbors(
     time: number,
-    intervals: TimedIntervalWithNumberValue[],
+    intervals: TimedIntervalWithNumberData[],
 ) {
-    let current: TimedIntervalWithNumberValue | null = null;
-    let previous: TimedIntervalWithNumberValue | null = null;
-    let next: TimedIntervalWithNumberValue | null = null;
+    let current: TimedIntervalWithNumberData | null = null;
+    let previous: TimedIntervalWithNumberData | null = null;
+    let next: TimedIntervalWithNumberData | null = null;
 
     for (let i = 0; i < intervals.length; i++) {
         const interval = intervals[i];
@@ -55,7 +58,7 @@ export function findNeighbors(
  */
 export function computeValueAtTime(
     time: number,
-    intervals: TimedIntervalWithNumberValue[],
+    intervals: TimedIntervalWithNumberData[],
     config: {
         fallback: number;
         rampDuration: number;
@@ -70,20 +73,20 @@ export function computeValueAtTime(
     const { current, previous, next } = findNeighbors(time, intervals);
 
     if (rampDuration <= 0) {
-        return current?.value ?? fallback;
+        return current?.data.value ?? fallback;
     }
 
     if (current) {
-        const prevValue = previous ? previous.value : fallback;
-        const nextValue = next ? next.value : fallback;
+        const prevValue = previous ? previous.data.value : fallback;
+        const nextValue = next ? next.data.value : fallback;
         const minNeighborValue = Math.min(prevValue, nextValue);
 
-        let currentValue = current.value;
+        let currentValue = current.data.value;
         let value = currentValue;
         const currentMid = (current.start + current.end) / 2;
         const currentDuration = current.end - current.start;
-        const needRampIn = prevValue < current.value;
-        const needRampOut = nextValue < current.value;
+        const needRampIn = prevValue < current.data.value;
+        const needRampOut = nextValue < current.data.value;
 
         // Override the current value if the bump is too much.
         if (needRampIn && needRampOut && currentDuration < rampDuration) {
@@ -129,8 +132,8 @@ export function computeValueAtTime(
     }
 
     // When time falls outside any active interval (in fallback space)
-    const prevValue = previous ? previous.value : fallback;
-    const nextValue = next ? next.value : fallback;
+    const prevValue = previous ? previous.data.value : fallback;
+    const nextValue = next ? next.data.value : fallback;
 
     // Transition out of previous interval if previous value was higher
     if (previous && prevValue > fallback) {
@@ -163,7 +166,7 @@ export type ValuePoint = {
  * Sample the curve so it can be rendered as a line graph later.
  */
 export function sampleCurve(
-    intervals: TimedIntervalWithNumberValue[],
+    intervals: TimedIntervalWithNumberData[],
     durationSeconds: number,
     stepSeconds = 0.1,
     config: {
