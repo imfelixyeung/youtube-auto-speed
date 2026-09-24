@@ -38,30 +38,30 @@ describe("computeSpeedAtTime", () => {
     const intervals = [first, second];
 
     test("returns first speed while a within interval", () => {
-        expect(computeValueAtTime(0.5, intervals, baseConfig)).toBe(
+        expect(computeValueAtTime(0.5, intervals, baseConfig)[0]).toBe(
             first.data.value,
         );
     });
 
     test("returns fallback speed when there are no intervals", () => {
-        expect(computeValueAtTime(10, [], baseConfig)).toBe(fallback);
+        expect(computeValueAtTime(10, [], baseConfig)[0]).toBe(fallback);
     });
 
     test("ramps up between first and second speed after speech ends", () => {
-        const speed = computeValueAtTime(1.5, intervals, baseConfig);
+        const speed = computeValueAtTime(1.5, intervals, baseConfig)[0];
         expect(speed).toBe(2);
     });
 
     test("reaches fallback speed one full ramp after speech ends", () => {
-        expect(computeValueAtTime(3, intervals, baseConfig)).toBe(fallback);
+        expect(computeValueAtTime(3, intervals, baseConfig)[0]).toBe(fallback);
     });
 
     test("returns fallback speed far from any intervals", () => {
-        expect(computeValueAtTime(5, intervals, baseConfig)).toBe(fallback);
+        expect(computeValueAtTime(5, intervals, baseConfig)[0]).toBe(fallback);
     });
 
     test("reaches defined speed exactly when the next caption starts", () => {
-        expect(computeValueAtTime(2, intervals, baseConfig)).toBe(
+        expect(computeValueAtTime(2, intervals, baseConfig)[0]).toBe(
             second.data.value,
         );
     });

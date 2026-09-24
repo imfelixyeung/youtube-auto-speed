@@ -5,13 +5,20 @@ export abstract class AbstractController {
     protected getVideo: () => HTMLVideoElement | null;
     protected getConfig: () => AutoSpeedConfig;
     protected getIntervals: () => TimedIntervalWithNumberData[];
-    protected onApplied: (value: number) => void;
+    protected onApplied: (
+        value: number,
+        interval: TimedIntervalWithNumberData | null,
+    ) => void;
+    private oldIntervalData: TimedIntervalWithNumberData["data"] | null = null;
 
     constructor(props: {
         getVideo: () => HTMLVideoElement | null;
         getConfig: () => AutoSpeedConfig;
         getIntervals: () => TimedIntervalWithNumberData[];
-        onApplied: (rounded: number) => void;
+        onApplied: (
+            value: number,
+            interval: TimedIntervalWithNumberData | null,
+        ) => void;
     }) {
         this.getVideo = props.getVideo;
         this.getConfig = props.getConfig;
@@ -19,11 +26,14 @@ export abstract class AbstractController {
         this.onApplied = props.onApplied;
     }
 
-    public abstract set(value: number): void;
+    public abstract set(
+        value: number,
+        interval: TimedIntervalWithNumberData | null,
+    ): void;
 
     protected reset(): void {}
 
-    protected compute(): number {
+    protected compute(): [number, TimedIntervalWithNumberData | null] {
         const config = this.getConfig();
         return computeValueAtTime(
             this.getVideo()?.currentTime ?? 0,
@@ -48,6 +58,14 @@ export abstract class AbstractController {
         }
 
         const desired = this.compute();
-        this.set(desired);
+        this.set(...desired);
+    }
+
+    protected updateAndCheckIsNewIntervalData(
+        data: TimedIntervalWithNumberData["data"],
+    ) {
+        if (this.oldIntervalData === data) return true;
+        this.oldIntervalData = data;
+        return false;
     }
 }

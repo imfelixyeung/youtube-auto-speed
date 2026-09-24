@@ -73,7 +73,7 @@ import { clamp } from "./utils/clamp";
             track: new Track(
                 "normal",
                 {
-                    label: "Normal Speed",
+                    label: "Normal",
                     value: TALKING_SPEED.defaultValue,
                 },
                 [Track.infinite],
@@ -175,15 +175,20 @@ import { clamp } from "./utils/clamp";
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => speedTracks.flatten().intervals,
-        onApplied: (rate) => overlay.setSpeedBadgeText(`${rate.toFixed(2)}x`),
+        onApplied: (rate, interval) =>
+            overlay.setSpeedBadgeText(
+                `${interval?.data.label ?? ""}@${rate.toFixed(2)}x`,
+            ),
     });
 
     const volume = new VolumeController({
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => volumeTracks.flatten().intervals,
-        onApplied: (volume) =>
-            overlay.setVolumeBadgeText(`${(volume * 100).toFixed()}%`),
+        onApplied: (volume, interval) =>
+            overlay.setVolumeBadgeText(
+                `${interval?.data.label ?? ""}@${(volume * 100).toFixed()}%`,
+            ),
     });
 
     // Time saved is derived from the cached speed curve, so it only needs a

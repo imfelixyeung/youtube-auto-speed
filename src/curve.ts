@@ -64,16 +64,16 @@ export function computeValueAtTime(
         rampDuration: number;
         easingFn: EasingFn;
     },
-): number {
+): [number, TimedIntervalWithNumberData | null] {
     const { fallback, rampDuration, easingFn } = config;
     if (intervals.length === 0) {
-        return config.fallback;
+        return [config.fallback, null];
     }
 
     const { current, previous, next } = findNeighbors(time, intervals);
 
     if (rampDuration <= 0) {
-        return current?.data.value ?? fallback;
+        return [current?.data.value ?? fallback, current];
     }
 
     if (current) {
@@ -128,7 +128,7 @@ export function computeValueAtTime(
             }
         }
 
-        return value;
+        return [value, current];
     }
 
     // When time falls outside any active interval (in fallback space)
@@ -140,7 +140,10 @@ export function computeValueAtTime(
         if (time < previous.end + rampDuration) {
             const progress = (time - previous.end) / rampDuration;
             const easedProgress = easingFn(progress);
-            return prevValue - easedProgress * (prevValue - fallback);
+            return [
+                prevValue - easedProgress * (prevValue - fallback),
+                current,
+            ];
         }
     }
 
@@ -150,11 +153,11 @@ export function computeValueAtTime(
             const progress =
                 (time - (next.start - rampDuration)) / rampDuration;
             const easedProgress = easingFn(progress);
-            return fallback + easedProgress * (nextValue - fallback);
+            return [fallback + easedProgress * (nextValue - fallback), current];
         }
     }
 
-    return fallback;
+    return [fallback, current];
 }
 
 export type ValuePoint = {
@@ -178,9 +181,10 @@ export function sampleCurve(
     const points: ValuePoint[] = [];
 
     for (let time = 0; time <= durationSeconds; time += stepSeconds) {
+        const [value] = computeValueAtTime(time, intervals, config);
         points.push({
             time,
-            value: computeValueAtTime(time, intervals, config),
+            value,
         });
     }
 
