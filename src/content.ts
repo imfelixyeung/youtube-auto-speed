@@ -410,7 +410,7 @@ import { clamp } from "./utils/clamp";
                 if (!Number.isInteger(volume)) continue;
                 volume = clamp(Math.round(volume) / 100, 0, 1);
 
-                volumeTracks.get("normal").value = volume;
+                volumeTracks.get("normal").data = volume;
                 volumeTracks.flatten(true);
             }
         });
@@ -590,7 +590,7 @@ import { clamp } from "./utils/clamp";
         speed: number,
     ) {
         config[configKey] = speed;
-        speedTracks.get(track).value = speed;
+        speedTracks.get(track).data = speed;
         speedTracks.flatten(true);
         updateSpeed();
         updateChart();
@@ -756,7 +756,7 @@ import { clamp } from "./utils/clamp";
     });
     REDACT_VOLUME.listen((value) => {
         config.redact.volume = value;
-        volumeTracks.get("redact").value = value;
+        volumeTracks.get("redact").data = value;
         volumeTracks.flatten(true);
         volume.update();
     });

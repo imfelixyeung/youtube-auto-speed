@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
 import type { TimedInterval, TimedIntervalWithNumberValue } from "../curve";
-import { type TimedTrack, Track, Tracks } from "./tracks";
+import { Track, Tracks } from "./tracks";
 
 describe("Track", () => {
     describe("static empty()", () => {
         it("creates an empty track with default values", () => {
             const track = Track.empty();
             expect(track.name).toBe("");
-            expect(track.value).toBe(0);
+            expect(track.data).toBe(null);
             expect(track.intervals).toEqual([]);
         });
     });
@@ -90,11 +90,7 @@ describe("Track", () => {
         });
 
         it("preserves additional properties on custom interval types", () => {
-            interface CustomInterval extends TimedInterval {
-                label: string;
-            }
-
-            const track = new Track<CustomInterval>("Custom", 1, [
+            const track = new Track("Custom", 1, [
                 { start: 0, end: 10, label: "Original" },
             ]);
 
@@ -147,9 +143,9 @@ describe("Track", () => {
 describe("Tracks", () => {
     type TrackName = "bass" | "treble";
 
-    let trackA: TimedTrack;
-    let trackB: TimedTrack;
-    let tracks: Tracks<TrackName>;
+    let trackA: Track<number>;
+    let trackB: Track<number>;
+    let tracks: Tracks<number, TrackName>;
 
     beforeEach(() => {
         trackA = new Track("bass", 1.5, [{ start: 0, end: 10 }]);
