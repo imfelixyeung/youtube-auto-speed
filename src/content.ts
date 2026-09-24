@@ -70,27 +70,56 @@ import { clamp } from "./utils/clamp";
     const speedTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", TALKING_SPEED.defaultValue, [
-                Track.infinite,
-            ]),
+            track: new Track(
+                "normal",
+                {
+                    label: "Normal",
+                    value: TALKING_SPEED.defaultValue,
+                },
+                [Track.infinite],
+            ),
         },
         {
             name: "boost",
-            track: new Track("silent", BOOST_SPEED.defaultValue, []),
+            track: new Track(
+                "boost",
+                {
+                    label: "Boost",
+                    value: BOOST_SPEED.defaultValue,
+                },
+                [],
+            ),
         },
         {
             name: "silent",
-            track: new Track("silent", SILENT_SPEED.defaultValue, []),
+            track: new Track(
+                "silent",
+                {
+                    label: "Silent",
+                    value: SILENT_SPEED.defaultValue,
+                },
+                [],
+            ),
         },
         {
             name: "smartSkip",
-            track: new Track("smartSkip", SMART_SKIP_SPEED.defaultValue, []),
+            track: new Track(
+                "smartSkip",
+                {
+                    label: "Smart Skip",
+                    value: SMART_SKIP_SPEED.defaultValue,
+                },
+                [],
+            ),
         },
         {
             name: "skipSegments",
             track: new Track(
                 "skipSegments",
-                SKIP_SEGMENTS_SPEED.defaultValue,
+                {
+                    label: "Skip Segments",
+                    value: SKIP_SEGMENTS_SPEED.defaultValue,
+                },
                 [],
             ),
         },
@@ -98,13 +127,17 @@ import { clamp } from "./utils/clamp";
     const volumeTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", 1, [
+            track: new Track("normal", { label: "Normal", value: 1 }, [
                 { start: -Infinity, end: Infinity },
             ]),
         },
         {
             name: "redact",
-            track: new Track("redact", REDACT_VOLUME.defaultValue, []),
+            track: new Track(
+                "redact",
+                { label: "Redact", value: REDACT_VOLUME.defaultValue },
+                [],
+            ),
         },
     ]);
     let captionVersion = 0;
@@ -142,15 +175,20 @@ import { clamp } from "./utils/clamp";
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => speedTracks.flatten().intervals,
-        onApplied: (rate) => overlay.setSpeedBadgeText(`${rate.toFixed(2)}x`),
+        onApplied: (rate, interval) =>
+            overlay.setSpeedBadgeText(
+                `${interval?.data.label ?? ""}@${rate.toFixed(2)}x`,
+            ),
     });
 
     const volume = new VolumeController({
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => volumeTracks.flatten().intervals,
-        onApplied: (volume) =>
-            overlay.setVolumeBadgeText(`${(volume * 100).toFixed()}%`),
+        onApplied: (volume, interval) =>
+            overlay.setVolumeBadgeText(
+                `${interval?.data.label ?? ""}@${(volume * 100).toFixed()}%`,
+            ),
     });
 
     // Time saved is derived from the cached speed curve, so it only needs a
@@ -410,7 +448,7 @@ import { clamp } from "./utils/clamp";
                 if (!Number.isInteger(volume)) continue;
                 volume = clamp(Math.round(volume) / 100, 0, 1);
 
-                volumeTracks.get("normal").value = volume;
+                volumeTracks.get("normal").data.value = volume;
                 volumeTracks.flatten(true);
             }
         });
@@ -590,7 +628,7 @@ import { clamp } from "./utils/clamp";
         speed: number,
     ) {
         config[configKey] = speed;
-        speedTracks.get(track).value = speed;
+        speedTracks.get(track).data.value = speed;
         speedTracks.flatten(true);
         updateSpeed();
         updateChart();
@@ -756,7 +794,7 @@ import { clamp } from "./utils/clamp";
     });
     REDACT_VOLUME.listen((value) => {
         config.redact.volume = value;
-        volumeTracks.get("redact").value = value;
+        volumeTracks.get("redact").data.value = value;
         volumeTracks.flatten(true);
         volume.update();
     });

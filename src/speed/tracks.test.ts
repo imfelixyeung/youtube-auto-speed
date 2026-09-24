@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
-import type { TimedInterval, TimedIntervalWithNumberValue } from "../curve";
-import { type TimedTrack, Track, Tracks } from "./tracks";
+import type { TimedInterval, TimedIntervalWithData } from "../curve";
+import { Track, Tracks } from "./tracks";
 
 describe("Track", () => {
     describe("static empty()", () => {
         it("creates an empty track with default values", () => {
-            const track = Track.empty();
+            const track = Track.empty(null);
             expect(track.name).toBe("");
-            expect(track.value).toBe(0);
+            expect(track.data).toBe(null);
             expect(track.intervals).toEqual([]);
         });
     });
 
     describe("addInterval()", () => {
         it("adds an interval to an empty track", () => {
-            const track = Track.empty();
+            const track = Track.empty(null);
             const interval: TimedInterval = { start: 0, end: 10 };
 
             track.addInterval(interval);
@@ -90,11 +90,7 @@ describe("Track", () => {
         });
 
         it("preserves additional properties on custom interval types", () => {
-            interface CustomInterval extends TimedInterval {
-                label: string;
-            }
-
-            const track = new Track<CustomInterval>("Custom", 1, [
+            const track = new Track("Custom", 1, [
                 { start: 0, end: 10, label: "Original" },
             ]);
 
@@ -147,9 +143,9 @@ describe("Track", () => {
 describe("Tracks", () => {
     type TrackName = "bass" | "treble";
 
-    let trackA: TimedTrack;
-    let trackB: TimedTrack;
-    let tracks: Tracks<TrackName>;
+    let trackA: Track<number>;
+    let trackB: Track<number>;
+    let tracks: Tracks<number, TrackName>;
 
     beforeEach(() => {
         trackA = new Track("bass", 1.5, [{ start: 0, end: 10 }]);
@@ -181,9 +177,9 @@ describe("Tracks", () => {
 
             const result = tracks.flatten();
 
-            expect(result.intervals).toEqual<TimedIntervalWithNumberValue[]>([
-                { start: 0, end: 5, value: 1.5 },
-                { start: 5, end: 15, value: 2.0 },
+            expect(result.intervals).toEqual<TimedIntervalWithData<number>[]>([
+                { start: 0, end: 5, data: 1.5 },
+                { start: 5, end: 15, data: 2.0 },
             ]);
 
             consoleSpy.mockRestore();

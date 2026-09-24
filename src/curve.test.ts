@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { easeCubicInOut } from "d3-ease";
-import { clamp01, computeValueAtTime, sampleCurve } from "./curve";
+import {
+    clamp01,
+    computeValueAtTime,
+    sampleCurve,
+    type TimedIntervalWithNumberData,
+} from "./curve";
 
 const fallback = 1;
 const baseConfig = {
@@ -20,41 +25,53 @@ describe("clamp01", () => {
 });
 
 describe("computeSpeedAtTime", () => {
-    const first = { start: 0, end: 1, value: 1 };
-    const second = { start: 1, end: 2, value: 2 };
+    const first: TimedIntervalWithNumberData = {
+        start: 0,
+        end: 1,
+        data: { label: "", value: 1 },
+    };
+    const second: TimedIntervalWithNumberData = {
+        start: 1,
+        end: 2,
+        data: { label: "", value: 2 },
+    };
     const intervals = [first, second];
 
     test("returns first speed while a within interval", () => {
-        expect(computeValueAtTime(0.5, intervals, baseConfig)).toBe(
-            first.value,
+        expect(computeValueAtTime(0.5, intervals, baseConfig)[0]).toBe(
+            first.data.value,
         );
     });
 
     test("returns fallback speed when there are no intervals", () => {
-        expect(computeValueAtTime(10, [], baseConfig)).toBe(fallback);
+        expect(computeValueAtTime(10, [], baseConfig)[0]).toBe(fallback);
     });
 
     test("ramps up between first and second speed after speech ends", () => {
-        const speed = computeValueAtTime(1.5, intervals, baseConfig);
+        const speed = computeValueAtTime(1.5, intervals, baseConfig)[0];
         expect(speed).toBe(2);
     });
 
     test("reaches fallback speed one full ramp after speech ends", () => {
-        expect(computeValueAtTime(3, intervals, baseConfig)).toBe(fallback);
+        expect(computeValueAtTime(3, intervals, baseConfig)[0]).toBe(fallback);
     });
 
     test("returns fallback speed far from any intervals", () => {
-        expect(computeValueAtTime(5, intervals, baseConfig)).toBe(fallback);
+        expect(computeValueAtTime(5, intervals, baseConfig)[0]).toBe(fallback);
     });
 
     test("reaches defined speed exactly when the next caption starts", () => {
-        expect(computeValueAtTime(2, intervals, baseConfig)).toBe(second.value);
+        expect(computeValueAtTime(2, intervals, baseConfig)[0]).toBe(
+            second.data.value,
+        );
     });
 });
 
 describe("sampleSpeedCurve", () => {
     test("samples the curve every step, inclusive of the end", () => {
-        const intervals = [{ start: 1, end: 2, value: 1 }];
+        const intervals: TimedIntervalWithNumberData[] = [
+            { start: 1, end: 2, data: { label: "", value: 1 } },
+        ];
 
         const points = sampleCurve(intervals, 2, 0.5, baseConfig);
 
@@ -62,9 +79,9 @@ describe("sampleSpeedCurve", () => {
     });
 
     test("samples the correct speed at each point", () => {
-        const intervals = [
-            { start: 1, end: 2, value: 1 },
-            { start: 2, end: 3, value: 2 },
+        const intervals: TimedIntervalWithNumberData[] = [
+            { start: 1, end: 2, data: { label: "", value: 1 } },
+            { start: 2, end: 3, data: { label: "", value: 2 } },
         ];
 
         const points = sampleCurve(intervals, 3, 0.25, baseConfig);
