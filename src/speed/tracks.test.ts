@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
-import type { TimedInterval, TimedIntervalWithSpeed } from "../speed-curve";
+import type { TimedInterval, TimedIntervalWithNumberValue } from "../curve";
 import { type TimedTrack, Track, Tracks } from "./tracks";
 
 describe("Track", () => {
@@ -7,7 +7,7 @@ describe("Track", () => {
         it("creates an empty track with default values", () => {
             const track = Track.empty();
             expect(track.name).toBe("");
-            expect(track.speed).toBe(0);
+            expect(track.value).toBe(0);
             expect(track.intervals).toEqual([]);
         });
     });
@@ -181,9 +181,9 @@ describe("Tracks", () => {
 
             const result = tracks.flatten();
 
-            expect(result.intervals).toEqual<TimedIntervalWithSpeed[]>([
-                { start: 0, end: 5, speed: 1.5 },
-                { start: 5, end: 15, speed: 2.0 },
+            expect(result.intervals).toEqual<TimedIntervalWithNumberValue[]>([
+                { start: 0, end: 5, value: 1.5 },
+                { start: 5, end: 15, value: 2.0 },
             ]);
 
             consoleSpy.mockRestore();

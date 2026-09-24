@@ -1,6 +1,7 @@
 import { CacheStore } from "./cache/store";
-import type { TimedInterval } from "./speed-curve";
-import type { TimedText } from "./types";
+import { REDACT_PADDING_END, REDACT_PADDING_START } from "./constants";
+import type { TimedInterval } from "./curve";
+import type { TimedText, TimedTextEventItem } from "./types";
 
 const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
 
@@ -127,15 +128,7 @@ export function _captionsToIntervals(
     const intervals: TimedInterval[] = [];
 
     for (const event of data.events) {
-        if (!Array.isArray(event.segs)) {
-            continue;
-        }
-
-        if (!Number.isFinite(event.tStartMs)) {
-            continue;
-        }
-
-        if (!Number.isFinite(event.dDurationMs)) {
+        if (!isValidEvent(event)) {
             continue;
         }
 
@@ -182,4 +175,71 @@ export function captionsToSilentIntervals(
         mergeIntervals(_captionsToIntervals(data, options)),
         duration,
     );
+}
+
+function shouldRedact(text: string) {
+    return text.includes("[ __ ]");
+}
+
+export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
+    const intervals: TimedInterval[] = [];
+
+    if (!data || !Array.isArray(data.events)) {
+        return [];
+    }
+
+    data.events.forEach((event, eventIndex, events) => {
+        if (!isValidEvent(event)) {
+            return;
+        }
+        const { segs } = event;
+
+        segs.forEach((seg, i, segs) => {
+            const redact = shouldRedact(seg.utf8);
+            if (!redact) {
+                return;
+            }
+            let start = event.tStartMs + (seg.tOffsetMs ?? 0);
+            const nextSeg = segs[i + 1];
+            let end = nextSeg?.tOffsetMs
+                ? event.tStartMs + nextSeg?.tOffsetMs
+                : event.tStartMs + event.dDurationMs;
+
+            const nextEvent = events[eventIndex + 1];
+            if (isValidEvent(nextEvent)) {
+                end = Math.min(end, nextEvent.tStartMs);
+            }
+
+            // Add, convert to seconds and add margin.
+
+            start = start / 1000 - REDACT_PADDING_START;
+            end = end / 1000 + REDACT_PADDING_END;
+
+            if (start >= end) {
+                return;
+            }
+
+            intervals.push({
+                start,
+                end,
+            });
+        });
+    });
+
+    // Sort by start time.
+    intervals.sort((a, b) => a.start - b.start);
+    return mergeIntervals(intervals);
+}
+
+function isValidEvent(event: TimedTextEventItem | undefined): event is Omit<
+    TimedTextEventItem,
+    "segs"
+> & {
+    segs: NonNullable<TimedTextEventItem["segs"]>;
+} {
+    if (event === undefined) return false;
+    if (!Array.isArray(event.segs)) return false;
+    if (!Number.isFinite(event.tStartMs)) return false;
+    if (!Number.isFinite(event.dDurationMs)) return false;
+    return true;
 }

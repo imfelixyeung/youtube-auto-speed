@@ -1,4 +1,4 @@
-import type { SpeedPoint } from "./speed-curve";
+import type { ValuePoint } from "./curve";
 
 /**
  * Wall-clock time "saved" by playing `elapsedMediaSeconds` of media at
@@ -37,7 +37,7 @@ export type TimeSavedPoint = {
  * This is the only integration done — call it once per captions/config
  * change, then turn lookups into `timeSavedAt`.
  */
-export function cumulativeTimeSaved(points: SpeedPoint[]): TimeSavedPoint[] {
+export function cumulativeTimeSaved(points: ValuePoint[]): TimeSavedPoint[] {
     const out: TimeSavedPoint[] = [];
     let total = 0;
 
@@ -55,8 +55,8 @@ export function cumulativeTimeSaved(points: SpeedPoint[]): TimeSavedPoint[] {
                 const dt = point.time - previous.time;
 
                 total +=
-                    (timeSavedForElapsed(dt, previous.speed) +
-                        timeSavedForElapsed(dt, point.speed)) /
+                    (timeSavedForElapsed(dt, previous.value) +
+                        timeSavedForElapsed(dt, point.value)) /
                     2;
             }
         }

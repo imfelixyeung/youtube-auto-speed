@@ -1,6 +1,7 @@
 import "./content.css";
 import {
     cacheTimedText,
+    captionsToRedactedIntervals,
     captionsToSilentIntervals,
     getCachedTimedText,
 } from "./captions";
@@ -14,11 +15,15 @@ import {
     FILTER_SQUARE_BRACKETS,
     PRESERVE_PITCH_ENABLED,
     RAMP_DURATION,
+    REDACT_ENABLED,
+    REDACT_VOLUME,
     SILENT_SPEED,
     SKIP_SEGMENTS_SPEED,
     SMART_SKIP_SPEED,
     TALKING_SPEED,
 } from "./config";
+import { SpeedController } from "./controllers/speed";
+import { VolumeController } from "./controllers/volume";
 import { getSkipSegments, type SkipSegment } from "./skip-segments/api";
 import {
     cacheSmartSkips,
@@ -27,7 +32,6 @@ import {
     type SmartSkipIntervals,
 } from "./smart-skip";
 import { type InferTrackNames, Track, Tracks } from "./speed/tracks";
-import { createSpeedControl } from "./speed-control";
 import { formatTimeSavedRatio } from "./time-saved";
 import type {
     AutoSpeedCaptionsEvent,
@@ -38,6 +42,7 @@ import type {
     EasingFunction,
     TimedText,
 } from "./types";
+import { clamp } from "./utils/clamp";
 
 (() => {
     const config: AutoSpeedConfig = {
@@ -55,6 +60,10 @@ import type {
         easingFunction: {
             value: EASING_FUNCTION.defaultValue,
             fn: EASING_FUNCTION.defaultMappedValue,
+        },
+        redact: {
+            enabled: REDACT_ENABLED.defaultValue,
+            volume: REDACT_VOLUME.defaultValue,
         },
     };
     let video: HTMLVideoElement | null = null;
@@ -86,9 +95,25 @@ import type {
             ),
         },
     ]);
+    const volumeTracks = new Tracks([
+        {
+            name: "normal",
+            track: new Track("normal", 1, [
+                { start: -Infinity, end: Infinity },
+            ]),
+        },
+        {
+            name: "redact",
+            track: new Track("redact", REDACT_VOLUME.defaultValue, []),
+        },
+    ]);
     let captionVersion = 0;
     let currentVideoId: string | null = null;
     let x2speed: {
+        overlay: HTMLElement;
+        observer: MutationObserver;
+    } | null = null;
+    let volumePanel: {
         overlay: HTMLElement;
         observer: MutationObserver;
     } | null = null;
@@ -113,11 +138,19 @@ import type {
         onBoostEnd,
     });
 
-    const speed = createSpeedControl({
+    const speed = new SpeedController({
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => speedTracks.flatten().intervals,
-        onRateApplied: (rate) => overlay.setBadgeText(`${rate.toFixed(2)}x`),
+        onApplied: (rate) => overlay.setSpeedBadgeText(`${rate.toFixed(2)}x`),
+    });
+
+    const volume = new VolumeController({
+        getVideo: () => video,
+        getConfig: () => config,
+        getIntervals: () => volumeTracks.flatten().intervals,
+        onApplied: (volume) =>
+            overlay.setVolumeBadgeText(`${(volume * 100).toFixed()}%`),
     });
 
     // Time saved is derived from the cached speed curve, so it only needs a
@@ -206,6 +239,7 @@ import type {
 
     function tick() {
         updateSpeed();
+        volume.update();
         refreshPlayhead();
 
         if (video && !video.paused && !video.ended && config.enabled) {
@@ -266,6 +300,9 @@ import type {
     }
 
     function detachVideo() {
+        unlistenX2Speed();
+        unlistenVolumeChange();
+
         if (!video) {
             return;
         }
@@ -287,7 +324,8 @@ import type {
         }
 
         detachVideo();
-        unlistenX2Speed();
+        listenX2Speed();
+        listenVolumeChange();
 
         log("Video attached");
         video = newVideo;
@@ -345,6 +383,44 @@ import type {
         };
     }
 
+    function unlistenVolumeChange() {
+        if (volumePanel === null) return;
+        volumePanel.observer.disconnect();
+        volumePanel = null;
+    }
+
+    /**
+     * This is to respect the YouTube player's volume slider.
+     */
+    function listenVolumeChange() {
+        const overlay = document.querySelector(".ytp-volume-panel");
+        if (!(overlay instanceof HTMLElement)) {
+            return;
+        }
+        const observer = new MutationObserver((mutationList) => {
+            for (const mutation of mutationList) {
+                if (mutation.type !== "attributes" || volumePanel === null) {
+                    continue;
+                }
+
+                const value = volumePanel.overlay?.ariaValueNow;
+                if (value === undefined) continue;
+
+                let volume = Number(volumePanel.overlay?.ariaValueNow);
+                if (!Number.isInteger(volume)) continue;
+                volume = clamp(Math.round(volume) / 100, 0, 1);
+
+                volumeTracks.get("normal").value = volume;
+                volumeTracks.flatten(true);
+            }
+        });
+        observer.observe(overlay, { attributeFilter: ["aria-valuenow"] });
+        volumePanel = {
+            overlay,
+            observer,
+        };
+    }
+
     function checkForVideo() {
         const newVideo = findVideo();
 
@@ -366,7 +442,10 @@ import type {
                 filterParentheses: config.filterParentheses,
             },
         );
+        volumeTracks.get("redact").intervals =
+            captionsToRedactedIntervals(data);
         speedTracks.flatten(true);
+        volumeTracks.flatten(true);
         captionVersion++;
         log(
             `Loaded ${speedTracks.get("silent").intervals.length} caption intervals (${source})`,
@@ -511,7 +590,7 @@ import type {
         speed: number,
     ) {
         config[configKey] = speed;
-        speedTracks.get(track).speed = speed;
+        speedTracks.get(track).value = speed;
         speedTracks.flatten(true);
         updateSpeed();
         updateChart();
@@ -668,6 +747,18 @@ import type {
     PRESERVE_PITCH_ENABLED.listen((value) => {
         if (video === null) return;
         video.preservesPitch = value;
+    });
+    REDACT_ENABLED.listen((enabled) => {
+        config.redact.enabled = enabled;
+        volumeTracks.get("redact").enabled = enabled;
+        volumeTracks.flatten(true);
+        volume.update();
+    });
+    REDACT_VOLUME.listen((value) => {
+        config.redact.volume = value;
+        volumeTracks.get("redact").value = value;
+        volumeTracks.flatten(true);
+        volume.update();
     });
 
     log("Initialized");

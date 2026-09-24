@@ -19,6 +19,10 @@ export type AutoSpeedConfig = {
     filterSquareBrackets: boolean;
     filterParentheses: boolean;
     easingFunction: { value: string; fn: EasingFunction };
+    redact: {
+        enabled: boolean;
+        volume: number;
+    };
 } & {
     [key in AutoSpeedConfigSpeedKey]: number;
 };

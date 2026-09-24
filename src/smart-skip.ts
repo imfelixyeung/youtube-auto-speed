@@ -1,6 +1,6 @@
 import { CacheStore } from "./cache/store";
+import type { TimedInterval } from "./curve";
 import type { VideoData } from "./schemas/video-data";
-import type { TimedInterval } from "./speed-curve";
 
 export type SmartSkipIntervals = TimedInterval[];
 

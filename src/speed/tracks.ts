@@ -1,12 +1,13 @@
-import type { TimedInterval, TimedIntervalWithSpeed } from "../speed-curve";
+import type { TimedInterval, TimedIntervalWithNumberValue } from "../curve";
 
 export class Track<I extends TimedInterval = TimedInterval> {
     static infinite: TimedInterval = { start: -Infinity, end: Infinity };
 
     constructor(
         public name: string,
-        public speed: number,
+        public value: number,
         public intervals: I[],
+        public enabled = true,
     ) {}
 
     public static empty<I extends TimedInterval = TimedInterval>() {
@@ -73,7 +74,7 @@ export class Track<I extends TimedInterval = TimedInterval> {
 }
 
 export type TimedTrack = Track<TimedInterval>;
-export type TimedSpeedTrack = Track<TimedIntervalWithSpeed>;
+export type TimedSpeedTrack = Track<TimedIntervalWithNumberValue>;
 
 export class Tracks<T extends string> {
     private trackMap: Map<T, TimedTrack>;
@@ -99,8 +100,9 @@ export class Tracks<T extends string> {
         this.flattened = Track.empty();
 
         for (const { track } of this.tracks) {
+            if (!track.enabled) continue;
             for (const interval of track.intervals) {
-                this.flattened.addInterval({ ...interval, speed: track.speed });
+                this.flattened.addInterval({ ...interval, value: track.value });
             }
         }
 

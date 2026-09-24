@@ -44,6 +44,7 @@
         justify-content: center;
 
         .auto-speed-badge,
+        .auto-volume-badge,
         .auto-speed-time-saved {
             display: grid;
             place-items: center;

@@ -9,7 +9,7 @@ import {
 } from "./time-saved";
 
 describe("timeSavedForElapsed", () => {
-    test("saves nothing at 1x speed", () => {
+    test("saves nothing at 1x", () => {
         expect(timeSavedForElapsed(60, 1)).toBe(0);
     });
 
@@ -41,13 +41,13 @@ describe("cumulativeTimeSaved", () => {
     });
 
     test("saves nothing when the whole curve runs at 1x", () => {
-        const curve = cumulativeTimeSaved(sharedSpeedPoints(0, 60, 10, 1));
+        const curve = cumulativeTimeSaved(sharedValuePoints(0, 60, 10, 1));
 
         expect(curve.at(-1)?.saved).toBe(0);
     });
 
     test("integrates a constant 2x curve to half the duration", () => {
-        const curve = cumulativeTimeSaved(sharedSpeedPoints(0, 60, 10, 2));
+        const curve = cumulativeTimeSaved(sharedValuePoints(0, 60, 10, 2));
 
         expect(curve).toEqual([
             { time: 0, saved: 0 },
@@ -60,18 +60,18 @@ describe("cumulativeTimeSaved", () => {
         ]);
     });
 
-    test("accumulates savings across different speed segments", () => {
+    test("accumulates savings across different value segments", () => {
         const curve = cumulativeTimeSaved(
-            sharedSpeedPoints(0, 60, 10, 2).concat(
-                sharedSpeedPoints(60, 90, 10, 4),
+            sharedValuePoints(0, 60, 10, 2).concat(
+                sharedValuePoints(60, 90, 10, 4),
             ),
         );
 
         expect(curve.at(-1)?.saved).toBeCloseTo(52.5);
     });
 
-    test("yields a non-decreasing curve for speeds above 1x", () => {
-        const curve = cumulativeTimeSaved(rampSpeedPoints(0, 60, 10, 1, 2));
+    test("yields a non-decreasing curve for values above 1x", () => {
+        const curve = cumulativeTimeSaved(rampValuePoints(0, 60, 10, 1, 2));
 
         for (let i = 1; i < curve.length; i++) {
             expect(curve[i]?.saved).toBeGreaterThanOrEqual(
@@ -157,37 +157,37 @@ describe("formatTimeSaved", () => {
     });
 });
 
-function sharedSpeedPoints(
+function sharedValuePoints(
     start: number,
     end: number,
     step: number,
-    speed: number,
+    value: number,
 ) {
-    const points: { time: number; speed: number }[] = [];
+    const points: { time: number; value: number }[] = [];
 
     for (let time = start; time <= end; time += step) {
-        points.push({ time, speed });
+        points.push({ time, value });
     }
 
     return points;
 }
 
-/** Linearly ramp from `fromSpeed` to `toSpeed` across `start`..`end`. */
-function rampSpeedPoints(
+/** Linearly ramp from `fromValue` to `toValue` across `start`..`end`. */
+function rampValuePoints(
     start: number,
     end: number,
     step: number,
-    fromSpeed: number,
-    toSpeed: number,
+    fromValue: number,
+    toValue: number,
 ) {
-    const points: { time: number; speed: number }[] = [];
+    const points: { time: number; value: number }[] = [];
 
     for (let time = start; time <= end + 1e-9; time += step) {
         const progress = (time - start) / (end - start);
 
         points.push({
             time,
-            speed: fromSpeed + progress * (toSpeed - fromSpeed),
+            value: fromValue + progress * (toValue - fromValue),
         });
     }
 

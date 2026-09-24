@@ -139,3 +139,18 @@ export const EASING_FUNCTION = new ChoiceConfig({
         },
     ],
 });
+
+export const REDACT_ENABLED = new BooleanConfig({
+    displayName: "Enable auto redaction",
+    storageKey: "redactEnabled",
+    defaultValue: false,
+});
+
+export const REDACT_VOLUME = new NumberConfig({
+    displayName: "Redaction volume",
+    storageKey: "redactVolume",
+    defaultValue: 0,
+    min: 0,
+    max: 1,
+    step: 0.05,
+});

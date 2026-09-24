@@ -8,12 +8,12 @@ import {
     PointElement,
     type ScriptableContext,
 } from "chart.js";
-import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
-    type SpeedPoint,
-    sampleSpeedCurve,
-    type TimedIntervalWithSpeed,
-} from "./speed-curve";
+    sampleCurve,
+    type TimedIntervalWithNumberValue,
+    type ValuePoint,
+} from "./curve";
+import { createPlayheadPlugin, type PlayheadState } from "./playhead-plugin";
 import {
     cumulativeTimeSaved,
     formatTimeSavedRatio,
@@ -25,7 +25,7 @@ import { cssVar } from "./utils";
 
 export type ChartData = {
     video: HTMLVideoElement | null;
-    intervals: TimedIntervalWithSpeed[];
+    intervals: TimedIntervalWithNumberValue[];
     captionVersion: number;
     config: AutoSpeedConfig;
 };
@@ -34,7 +34,8 @@ export type ChartOverlay = {
     attach: (player: HTMLElement | null, enabled: boolean) => void;
     update: (data: ChartData) => void;
     refreshPlayhead: (time: number) => void;
-    setBadgeText: (text: string) => void;
+    setSpeedBadgeText: (text: string) => void;
+    setVolumeBadgeText: (text: string) => void;
     setTimeSavedText: (text: string) => void;
     /**
      * Cumulative seconds saved (vs 1x) if the playhead is at `time`, from the
@@ -81,7 +82,8 @@ export function createChartOverlay(
     },
 ): ChartOverlay {
     let overlay: HTMLElement | null = null;
-    let badge: HTMLElement | null = null;
+    let volumeBadge: HTMLElement | null = null;
+    let speedBadge: HTMLElement | null = null;
     let timeSaved: HTMLElement | null = null;
     let badgeActive = true;
     let chart: Chart | null = null;
@@ -98,7 +100,7 @@ export function createChartOverlay(
     let lastPlayheadRender = 0;
     let overlayHovered = false;
     let cachedChartKey = "";
-    let cachedChartPoints: SpeedPoint[] = [];
+    let cachedChartPoints: ValuePoint[] = [];
     let cachedTimeSaved: TimeSavedPoint[] = [];
     let lastData: ChartData | null = null;
 
@@ -112,13 +114,19 @@ export function createChartOverlay(
         timeSaved.setAttribute("data-auto-speed-time-saved", "");
         timeSaved.textContent = formatTimeSavedRatio(0, 0);
 
-        badge = document.createElement("div");
-        badge.className = "auto-speed-badge";
-        badge.setAttribute("data-auto-speed-badge", "");
-        badge.textContent = "1.00x";
+        volumeBadge = document.createElement("div");
+        volumeBadge.className = "auto-volume-badge";
+        volumeBadge.setAttribute("data-auto-volume-badge", "");
+        volumeBadge.textContent = "100%";
+
+        speedBadge = document.createElement("div");
+        speedBadge.className = "auto-speed-badge";
+        speedBadge.setAttribute("data-auto-speed-badge", "");
+        speedBadge.textContent = "1.00x";
 
         statusEl.appendChild(timeSaved);
-        statusEl.appendChild(badge);
+        statusEl.appendChild(volumeBadge);
+        statusEl.appendChild(speedBadge);
         return statusEl;
     }
 
@@ -291,12 +299,12 @@ export function createChartOverlay(
         ].join("|");
 
         if (cacheKey !== cachedChartKey) {
-            cachedChartPoints = sampleSpeedCurve(
+            cachedChartPoints = sampleCurve(
                 data.intervals,
                 duration,
                 duration / MAX_CHART_SAMPLES,
                 {
-                    fallbackSpeed: data.config.talkingSpeed,
+                    fallback: data.config.talkingSpeed,
                     rampDuration: data.config.rampDurationSeconds,
                     easingFn: data.config.easingFunction.fn,
                 },
@@ -306,7 +314,7 @@ export function createChartOverlay(
                 point.time.toFixed(2),
             );
 
-            dataset.data = cachedChartPoints.map((point) => point.speed);
+            dataset.data = cachedChartPoints.map((point) => point.value);
 
             // The cumulative saved-time curve is a side-effect of the same
             // sampled speed curve, so it only needs this one integration pass
@@ -362,9 +370,15 @@ export function createChartOverlay(
         chart.render();
     }
 
-    function setBadgeText(text: string) {
-        if (badge) {
-            badge.textContent = text;
+    function setSpeedBadgeText(text: string) {
+        if (speedBadge) {
+            speedBadge.textContent = text;
+        }
+    }
+
+    function setVolumeBadgeText(text: string) {
+        if (volumeBadge) {
+            volumeBadge.textContent = text;
         }
     }
 
@@ -389,12 +403,12 @@ export function createChartOverlay(
     }
 
     function setBadgeActive(active: boolean) {
-        if (!badge || !timeSaved || active === badgeActive) {
+        if (!speedBadge || !timeSaved || active === badgeActive) {
             return;
         }
 
         badgeActive = active;
-        badge.classList.toggle("auto-speed-badge--inactive", !active);
+        speedBadge.classList.toggle("auto-speed-badge--inactive", !active);
         timeSaved.classList.toggle("auto-speed-time-saved--hidden", !active);
     }
 
@@ -402,7 +416,8 @@ export function createChartOverlay(
         attach,
         update,
         refreshPlayhead,
-        setBadgeText,
+        setSpeedBadgeText,
+        setVolumeBadgeText,
         setTimeSavedText,
         getTimeSavedAt,
         getExpectedTimeSaved,
