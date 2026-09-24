@@ -12,6 +12,7 @@ import {
     ENABLED,
     FILTER_PARENTHESES,
     FILTER_SQUARE_BRACKETS,
+    PRESERVE_PITCH_ENABLED,
     RAMP_DURATION,
     SILENT_SPEED,
     SKIP_SEGMENTS_SPEED,
@@ -290,6 +291,7 @@ import type {
 
         log("Video attached");
         video = newVideo;
+        video.preservesPitch = PRESERVE_PITCH_ENABLED.value;
         speed.set(1);
         lastShownTimeSaved = null;
         overlay.setTimeSavedText(formatTimeSavedRatio(0, 0));
@@ -663,6 +665,10 @@ import type {
     EASING_FUNCTION.listen(() =>
         setEasingFunction(EASING_FUNCTION.value, EASING_FUNCTION.mappedValue),
     );
+    PRESERVE_PITCH_ENABLED.listen((value) => {
+        if (video === null) return;
+        video.preservesPitch = value;
+    });
 
     log("Initialized");
 })();
