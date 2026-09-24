@@ -17,6 +17,12 @@ export const ENABLED = new BooleanConfig({
     defaultValue: true,
 });
 
+export const PRESERVE_PITCH_ENABLED = new BooleanConfig({
+    displayName: "Preserves Pitch",
+    storageKey: "preservesPitch",
+    defaultValue: true,
+});
+
 export const SPEED_STEP = 0.05;
 
 export const RAMP_DURATION = new NumberConfig({

@@ -13,6 +13,7 @@ import {
     ENABLED,
     FILTER_PARENTHESES,
     FILTER_SQUARE_BRACKETS,
+    PRESERVE_PITCH_ENABLED,
     RAMP_DURATION,
     REDACT_ENABLED,
     REDACT_VOLUME,
@@ -328,6 +329,7 @@ import { clamp } from "./utils/clamp";
 
         log("Video attached");
         video = newVideo;
+        video.preservesPitch = PRESERVE_PITCH_ENABLED.value;
         speed.set(1);
         lastShownTimeSaved = null;
         overlay.setTimeSavedText(formatTimeSavedRatio(0, 0));
@@ -742,6 +744,10 @@ import { clamp } from "./utils/clamp";
     EASING_FUNCTION.listen(() =>
         setEasingFunction(EASING_FUNCTION.value, EASING_FUNCTION.mappedValue),
     );
+    PRESERVE_PITCH_ENABLED.listen((value) => {
+        if (video === null) return;
+        video.preservesPitch = value;
+    });
     REDACT_ENABLED.listen((enabled) => {
         config.redact.enabled = enabled;
         volumeTracks.get("redact").enabled = enabled;
