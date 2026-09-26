@@ -154,3 +154,9 @@ export const REDACT_VOLUME = new NumberConfig({
     max: 1,
     step: 0.05,
 });
+
+export const WARP_SPEED = new BooleanConfig({
+    displayName: "Enable warp speed animation",
+    storageKey: "warpSpeedEnabled",
+    defaultValue: false,
+});
