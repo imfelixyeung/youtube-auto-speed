@@ -15,7 +15,7 @@ class Star {
     public pz: number = 0;
 
     constructor(private options: Options) {
-        this.random();
+        this.random(true);
     }
 
     public calcFromOptions() {
@@ -23,12 +23,12 @@ class Star {
         this.y = this.normalisedY * this.options.height;
     }
 
-    public random() {
+    public random(init: boolean = false) {
         this.normalisedX = Math.random() - 0.5;
         this.normalisedY = Math.random() - 0.5;
         this.calcFromOptions();
-        this.pz = 1000;
-        this.z = Math.random() * this.pz;
+        this.pz = 500;
+        this.z = init ? Math.random() * this.pz : this.pz;
     }
 
     public tick() {
@@ -38,7 +38,7 @@ class Star {
         if (this.z <= 0) return this.random();
     }
 
-    private static readonly PROJECTION_CONSTANT = 300;
+    private static readonly PROJECTION_CONSTANT = 100;
     public draw(ctx: CanvasRenderingContext2D) {
         const { width, height, cx, cy } = this.options;
         // Perspective projection part 1.
