@@ -175,10 +175,12 @@ import { clamp } from "./utils/clamp";
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => speedTracks.flatten().intervals,
-        onApplied: (rate, interval) =>
+        onApplied: (rate, interval) => {
+            overlay.setSpeed(Math.max(0, rate - TALKING_SPEED.value));
             overlay.setSpeedBadgeText(
                 `${interval?.data.label ?? ""}@${rate.toFixed(2)}x`,
-            ),
+            );
+        },
     });
 
     const volume = new VolumeController({
@@ -291,6 +293,7 @@ import { clamp } from "./utils/clamp";
                 overlay.setTimeSavedText(text);
             }
 
+            overlay.tick();
             requestAnimationFrame(tick);
         } else {
             ticking = false;
