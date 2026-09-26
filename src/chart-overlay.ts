@@ -22,6 +22,7 @@ import {
 } from "./time-saved";
 import { type AutoSpeedConfig, autoSpeedConfigSpeedKeys } from "./types";
 import { cssVar } from "./utils";
+import { Warpspeed } from "./warpspeed";
 
 export type ChartData = {
     video: HTMLVideoElement | null;
@@ -33,6 +34,8 @@ export type ChartData = {
 export type ChartOverlay = {
     attach: (player: HTMLElement | null, enabled: boolean) => void;
     update: (data: ChartData) => void;
+    tick: () => void;
+    setSpeed: (speed: number) => void;
     refreshPlayhead: (time: number) => void;
     setSpeedBadgeText: (text: string) => void;
     setVolumeBadgeText: (text: string) => void;
@@ -87,6 +90,7 @@ export function createChartOverlay(
     let timeSaved: HTMLElement | null = null;
     let badgeActive = true;
     let chart: Chart | null = null;
+    let warpspeed: Warpspeed | null = null;
     let fillGradient: CanvasGradient | null = null;
     let fillGradientArea = { top: 0, bottom: 0 };
 
@@ -222,6 +226,13 @@ export function createChartOverlay(
             overlay.appendChild(canvas);
             overlay.appendChild(createStatusBar());
             chart = createChart(canvas);
+
+            const warpspeedCanvas = document.createElement("canvas");
+            warpspeedCanvas.className = "auto-speed-warp";
+            warpspeedCanvas.setAttribute("data-auto-speed-warp", "");
+            player.appendChild(warpspeedCanvas);
+            warpspeed = Warpspeed.instance(warpspeedCanvas);
+
             overlay.addEventListener("mouseenter", () => {
                 overlayHovered = true;
             });
@@ -412,9 +423,20 @@ export function createChartOverlay(
         timeSaved.classList.toggle("auto-speed-time-saved--hidden", !active);
     }
 
+    function setSpeed(speed: number) {
+        warpspeed?.setSpeed(speed);
+    }
+
+    function tick() {
+        warpspeed?.tick();
+        warpspeed?.draw();
+    }
+
     return {
         attach,
         update,
+        tick,
+        setSpeed,
         refreshPlayhead,
         setSpeedBadgeText,
         setVolumeBadgeText,

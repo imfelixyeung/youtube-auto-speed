@@ -21,6 +21,7 @@ import {
     SKIP_SEGMENTS_SPEED,
     SMART_SKIP_SPEED,
     TALKING_SPEED,
+    WARP_SPEED,
 } from "./config";
 import { SpeedController } from "./controllers/speed";
 import { VolumeController } from "./controllers/volume";
@@ -65,6 +66,7 @@ import { clamp } from "./utils/clamp";
             enabled: REDACT_ENABLED.defaultValue,
             volume: REDACT_VOLUME.defaultValue,
         },
+        warpSpeedEnabled: WARP_SPEED.defaultValue,
     };
     let video: HTMLVideoElement | null = null;
     const speedTracks = new Tracks([
@@ -175,10 +177,12 @@ import { clamp } from "./utils/clamp";
         getVideo: () => video,
         getConfig: () => config,
         getIntervals: () => speedTracks.flatten().intervals,
-        onApplied: (rate, interval) =>
+        onApplied: (rate, interval) => {
+            overlay.setSpeed(Math.max(0, rate - TALKING_SPEED.value));
             overlay.setSpeedBadgeText(
                 `${interval?.data.label ?? ""}@${rate.toFixed(2)}x`,
-            ),
+            );
+        },
     });
 
     const volume = new VolumeController({
@@ -291,6 +295,7 @@ import { clamp } from "./utils/clamp";
                 overlay.setTimeSavedText(text);
             }
 
+            if (config.warpSpeedEnabled) overlay.tick();
             requestAnimationFrame(tick);
         } else {
             ticking = false;
@@ -797,6 +802,13 @@ import { clamp } from "./utils/clamp";
         volumeTracks.get("redact").data.value = value;
         volumeTracks.flatten(true);
         volume.update();
+    });
+    WARP_SPEED.listen((value) => {
+        config.warpSpeedEnabled = value;
+        if (!value) {
+            overlay.setSpeed(0);
+            overlay.tick();
+        }
     });
 
     log("Initialized");
