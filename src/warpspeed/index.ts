@@ -71,6 +71,9 @@ export class Warpspeed {
     private ctx: CanvasRenderingContext2D;
     private options: Options;
     private stars: Star[];
+    private currentSpeed = 1;
+    private targetSpeed = 1;
+    private acceleration = 0.08;
 
     private constructor(private canvas: HTMLCanvasElement) {
         const ctx = canvas.getContext("2d");
@@ -107,8 +110,8 @@ export class Warpspeed {
         this.canvas.height = height * dpr;
         this.options.height = height;
         this.options.width = width;
-        this.options.cx = this.options.width / 2;
-        this.options.cy = this.options.height / 2;
+        this.options.cx = width / 2;
+        this.options.cy = height / 2;
         this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
@@ -122,6 +125,14 @@ export class Warpspeed {
     }
 
     public tick() {
+        this.currentSpeed +=
+            (this.targetSpeed - this.currentSpeed) * this.acceleration;
+
+        if (Math.abs(this.targetSpeed - this.currentSpeed) < 0.001) {
+            this.currentSpeed = this.targetSpeed;
+        }
+
+        this.options.speed = this.currentSpeed;
         this.stars.forEach((star) => void star.tick());
     }
 
@@ -131,6 +142,6 @@ export class Warpspeed {
     }
 
     public setSpeed(speed: number) {
-        this.options.speed = speed;
+        this.targetSpeed = Math.max(0, speed);
     }
 }
