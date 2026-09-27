@@ -56,7 +56,16 @@ class Star {
 
         const brightness = Math.min(1, 1000 / this.z);
 
-        ctx.strokeStyle = `rgba(255,255,255,${brightness})`;
+        // Guard against zero-length lines to prevent invalid gradient coordinates
+        if (px !== x || py !== y) {
+            const gradient = ctx.createLinearGradient(px, py, x, y);
+            gradient.addColorStop(0, "rgba(255, 255, 255, 0)");
+            gradient.addColorStop(1, `rgba(255, 255, 255, ${brightness})`);
+            ctx.strokeStyle = gradient;
+        } else {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${brightness})`;
+        }
+
         ctx.lineWidth = Math.max(1, brightness * 2);
 
         ctx.beginPath();
@@ -67,7 +76,7 @@ class Star {
 }
 
 export class Warpspeed {
-    private STAR_COUNT = 500;
+    private STAR_COUNT = 1000;
     private ctx: CanvasRenderingContext2D;
     private options: Options;
     private stars: Star[];
