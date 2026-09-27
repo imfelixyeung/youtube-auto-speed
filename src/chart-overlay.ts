@@ -34,7 +34,7 @@ export type ChartData = {
 export type ChartOverlay = {
     attach: (player: HTMLElement | null, enabled: boolean) => void;
     update: (data: ChartData) => void;
-    tick: () => void;
+    tick: (time: number) => void;
     setSpeed: (speed: number) => void;
     refreshPlayhead: (time: number) => void;
     setSpeedBadgeText: (text: string) => void;
@@ -427,8 +427,12 @@ export function createChartOverlay(
         warpspeed?.setSpeed(speed);
     }
 
-    function tick() {
-        warpspeed?.tick();
+    let lastTickTime: number = 0;
+    function tick(time: number) {
+        const delta = time - lastTickTime;
+        lastTickTime = time;
+        if (delta <= 0) return;
+        warpspeed?.tick(delta);
         warpspeed?.draw();
     }
 

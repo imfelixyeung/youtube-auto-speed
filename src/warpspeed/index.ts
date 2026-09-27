@@ -31,9 +31,9 @@ class Star {
         this.z = init ? Math.random() * this.pz : this.pz;
     }
 
-    public tick() {
+    public tick(delta: number) {
         this.pz = this.z;
-        this.z -= this.options.speed;
+        this.z -= this.options.speed * delta;
 
         if (this.z <= 0) return this.random();
     }
@@ -41,6 +41,7 @@ class Star {
     private static readonly PROJECTION_CONSTANT = 100;
     private static readonly STAR_TRAIL_HEAD = "rgba(240, 240, 255, 1)";
     private static readonly STAR_TRAIL_TAIL = "rgba(255, 240, 240, 0)";
+
     public draw(ctx: CanvasRenderingContext2D) {
         const { width, height, cx, cy } = this.options;
         // Perspective projection part 1.
@@ -81,7 +82,9 @@ export class Warpspeed {
     private stars: Star[];
     private currentSpeed = 1;
     private targetSpeed = 1;
-    private acceleration = 0.08;
+
+    private smoothingRate = 5;
+    private static readonly TARGET_FPS = 60;
 
     private constructor(private canvas: HTMLCanvasElement) {
         const ctx = canvas.getContext("2d");
@@ -132,16 +135,22 @@ export class Warpspeed {
         }
     }
 
-    public tick() {
+    public tick(delta: number) {
+        // Clamp delta time to avoid large jumps when switching tabs (max 100ms)
+        const dt = Math.min(delta, 0.1);
+        const deltaFactor = dt * Warpspeed.TARGET_FPS;
+
+        // Exponential decay interpolation for frame-rate independent smooth acceleration
+        const lerpFactor = 1 - Math.exp(-this.smoothingRate * dt);
         this.currentSpeed +=
-            (this.targetSpeed - this.currentSpeed) * this.acceleration;
+            (this.targetSpeed - this.currentSpeed) * lerpFactor;
 
         if (Math.abs(this.targetSpeed - this.currentSpeed) < 0.001) {
             this.currentSpeed = this.targetSpeed;
         }
 
         this.options.speed = this.currentSpeed;
-        this.stars.forEach((star) => void star.tick());
+        this.stars.forEach((star) => void star.tick(deltaFactor));
     }
 
     public draw() {

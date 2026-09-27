@@ -295,7 +295,7 @@ import { clamp } from "./utils/clamp";
                 overlay.setTimeSavedText(text);
             }
 
-            if (config.warpSpeedEnabled) overlay.tick();
+            if (config.warpSpeedEnabled) overlay.tick(video.currentTime);
             requestAnimationFrame(tick);
         } else {
             ticking = false;
@@ -807,7 +807,7 @@ import { clamp } from "./utils/clamp";
         config.warpSpeedEnabled = value;
         if (!value) {
             overlay.setSpeed(0);
-            overlay.tick();
+            overlay.tick(0);
         }
     });
 
