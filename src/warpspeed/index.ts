@@ -13,6 +13,7 @@ class Star {
     public y: number = 0;
     public z: number = 0;
     public pz: number = 0;
+    private initialZ: number = 0;
 
     constructor(private options: Options) {
         this.random(true);
@@ -27,8 +28,13 @@ class Star {
         this.normalisedX = Math.random() - 0.5;
         this.normalisedY = Math.random() - 0.5;
         this.calcFromOptions();
-        this.pz = 500;
-        this.z = init ? Math.random() * this.pz : this.pz;
+        if (init) {
+            this.z = Math.random() * 500;
+            this.initialZ = this.z;
+        } else {
+            this.z = this.initialZ;
+        }
+        this.pz = this.z;
     }
 
     public tick(delta: number) {
