@@ -39,6 +39,8 @@ class Star {
     }
 
     private static readonly PROJECTION_CONSTANT = 100;
+    private static readonly STAR_TRAIL_HEAD = "rgba(240, 240, 255, 1)";
+    private static readonly STAR_TRAIL_TAIL = "rgba(255, 240, 240, 0)";
     public draw(ctx: CanvasRenderingContext2D) {
         const { width, height, cx, cy } = this.options;
         // Perspective projection part 1.
@@ -54,20 +56,17 @@ class Star {
         const px = cx + (this.x / this.pz) * Star.PROJECTION_CONSTANT;
         const py = cy + (this.y / this.pz) * Star.PROJECTION_CONSTANT;
 
-        const brightness = Math.min(1, 1000 / this.z);
-
         // Guard against zero-length lines to prevent invalid gradient coordinates
         if (px !== x || py !== y) {
             const gradient = ctx.createLinearGradient(px, py, x, y);
-            gradient.addColorStop(0, "rgba(255, 255, 255, 0)");
-            gradient.addColorStop(1, `rgba(255, 255, 255, ${brightness})`);
+            gradient.addColorStop(0, Star.STAR_TRAIL_TAIL);
+            gradient.addColorStop(1, Star.STAR_TRAIL_HEAD);
             ctx.strokeStyle = gradient;
         } else {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${brightness})`;
+            ctx.strokeStyle = Star.STAR_TRAIL_HEAD;
         }
 
-        ctx.lineWidth = Math.max(1, brightness * 2);
-
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(px, py);
         ctx.lineTo(x, y);
