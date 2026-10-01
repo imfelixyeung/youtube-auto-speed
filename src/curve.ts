@@ -1,13 +1,10 @@
-export type TimedInterval = {
-    start: number;
-    end: number;
-};
+import type { TimedInterval } from "./timed-interval";
 
-export type TimedIntervalWithData<T> = TimedInterval & { data: T };
-export type TimedIntervalWithNumberData = TimedIntervalWithData<{
+export type NumberData = {
     label: string;
     value: number;
-}>;
+};
+export type TimedIntervalWithNumberData = TimedInterval<NumberData>;
 
 export type EasingFn = (t: number) => number;
 

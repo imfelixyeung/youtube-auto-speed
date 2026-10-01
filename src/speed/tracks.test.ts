@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "bun:test";
-import type { TimedInterval, TimedIntervalWithData } from "../curve";
+import { TimedInterval } from "../timed-interval";
 import { Track, Tracks } from "./tracks";
 
 describe("Track", () => {
@@ -14,127 +14,127 @@ describe("Track", () => {
 
     describe("addInterval()", () => {
         it("adds an interval to an empty track", () => {
-            const track = Track.empty(null);
-            const interval: TimedInterval = { start: 0, end: 10 };
+            const track = Track.empty();
+            const interval = new TimedInterval(0, 10);
 
             track.addInterval(interval);
 
-            expect(track.intervals).toEqual([{ start: 0, end: 10 }]);
+            expect(track.intervals).toEqual([new TimedInterval(0, 10)]);
         });
 
         it("appends non-overlapping intervals (Case 1)", () => {
-            const track = new Track("Test", 1, [{ start: 0, end: 5 }]);
-            track.addInterval({ start: 10, end: 15 });
+            const track = new Track("Test", [new TimedInterval(0, 5, null)]);
+            track.addInterval(new TimedInterval(10, 15, null));
 
             expect(track.intervals).toEqual([
-                { start: 0, end: 5 },
-                { start: 10, end: 15 },
+                new TimedInterval(0, 5, null),
+                new TimedInterval(10, 15, null),
             ]);
         });
 
         it("removes existing intervals fully covered by the new interval (Case 2)", () => {
-            const track = new Track("Test", 1, [
-                { start: 2, end: 4 },
-                { start: 5, end: 8 },
+            const track = new Track("Test", [
+                new TimedInterval(2, 4, null),
+                new TimedInterval(5, 8, null),
             ]);
-            track.addInterval({ start: 0, end: 10 });
+            track.addInterval(new TimedInterval(0, 10, null));
 
-            expect(track.intervals).toEqual([{ start: 0, end: 10 }]);
+            expect(track.intervals).toEqual([new TimedInterval(0, 10, null)]);
         });
 
         it("splits an existing interval when new interval is strictly inside it (Case 3)", () => {
-            const track = new Track("Test", 1, [{ start: 0, end: 10 }]);
-            track.addInterval({ start: 3, end: 7 });
+            const track = new Track("Test", [new TimedInterval(0, 10, null)]);
+            track.addInterval(new TimedInterval(3, 7, null));
 
             expect(track.intervals).toEqual([
-                { start: 0, end: 3 },
-                { start: 7, end: 10 },
-                { start: 3, end: 7 },
+                new TimedInterval(0, 3, null),
+                new TimedInterval(7, 10, null),
+                new TimedInterval(3, 7, null),
             ]);
         });
 
         it("trims the end of an existing interval overlapping on its right (Case 4)", () => {
-            const track = new Track("Test", 1, [{ start: 0, end: 10 }]);
-            track.addInterval({ start: 6, end: 15 });
+            const track = new Track("Test", [new TimedInterval(0, 10, null)]);
+            track.addInterval(new TimedInterval(6, 15, null));
 
             expect(track.intervals).toEqual([
-                { start: 0, end: 6 },
-                { start: 6, end: 15 },
+                new TimedInterval(0, 6, null),
+                new TimedInterval(6, 15, null),
             ]);
         });
 
         it("trims the start of an existing interval overlapping on its left (Case 5)", () => {
-            const track = new Track("Test", 1, [{ start: 5, end: 15 }]);
-            track.addInterval({ start: 0, end: 8 });
+            const track = new Track("Test", [new TimedInterval(5, 15, null)]);
+            track.addInterval(new TimedInterval(0, 8, null));
 
             expect(track.intervals).toEqual([
-                { start: 8, end: 15 },
-                { start: 0, end: 8 },
+                new TimedInterval(8, 15, null),
+                new TimedInterval(0, 8, null),
             ]);
         });
 
         it("handles multiple overlapping intervals across different cases", () => {
-            const track = new Track("Test", 1, [
-                { start: 0, end: 5 }, // Overlaps end (Case 4)
-                { start: 7, end: 9 }, // Fully covered (Case 2)
-                { start: 12, end: 20 }, // Overlaps start (Case 5)
+            const track = new Track("Test", [
+                new TimedInterval(0, 5, null), // Overlaps end (Case 4)
+                new TimedInterval(7, 9, null), // Fully covered (Case 2)
+                new TimedInterval(12, 20, null), // Overlaps start (Case 5)
             ]);
 
-            track.addInterval({ start: 3, end: 15 });
+            track.addInterval(new TimedInterval(3, 15, null));
 
             expect(track.intervals).toEqual([
-                { start: 0, end: 3 },
-                { start: 15, end: 20 },
-                { start: 3, end: 15 },
+                new TimedInterval(0, 3, null),
+                new TimedInterval(15, 20, null),
+                new TimedInterval(3, 15, null),
             ]);
         });
 
         it("preserves additional properties on custom interval types", () => {
-            const track = new Track("Custom", 1, [
-                { start: 0, end: 10, label: "Original" },
+            const track = new Track("Custom", [
+                new TimedInterval(0, 10, "Original"),
             ]);
 
-            track.addInterval({ start: 3, end: 7, label: "New" });
+            track.addInterval(new TimedInterval(3, 7, "New"));
 
             expect(track.intervals).toEqual([
-                { start: 0, end: 3, label: "Original" },
-                { start: 7, end: 10, label: "Original" },
-                { start: 3, end: 7, label: "New" },
+                new TimedInterval(0, 3, "Original"),
+                new TimedInterval(7, 10, "Original"),
+                new TimedInterval(3, 7, "New"),
             ]);
         });
     });
 
     describe("sort()", () => {
         it("sorts intervals primarily by start time", () => {
-            const track = new Track("Test", 1, [
-                { start: 10, end: 15 },
-                { start: 0, end: 5 },
-                { start: 6, end: 8 },
+            const track = new Track("Test", [
+                new TimedInterval(10, 15, null),
+                new TimedInterval(0, 5, null),
+                new TimedInterval(6, 8, null),
             ]);
 
             const result = track.sort();
 
             expect(result).toBe(track); // Verify chaining reference
             expect(track.intervals).toEqual([
-                { start: 0, end: 5 },
-                { start: 6, end: 8 },
-                { start: 10, end: 15 },
+                new TimedInterval(0, 5, null),
+                new TimedInterval(6, 8, null),
+                new TimedInterval(10, 15, null),
             ]);
         });
 
         it("sorts intervals secondarily by end time if start times are equal", () => {
-            const track = new Track("Test", 1, [
-                { start: 0, end: 10 },
-                { start: 0, end: 5 },
-                { start: 0, end: 8 },
+            const track = new Track("Test", [
+                new TimedInterval(0, 10, null),
+                new TimedInterval(0, 5, null),
+                new TimedInterval(0, 8, null),
             ]);
 
             track.sort();
 
             expect(track.intervals).toEqual([
-                { start: 0, end: 5 },
-                { start: 0, end: 8 },
-                { start: 0, end: 10 },
+                new TimedInterval(0, 5, null),
+                new TimedInterval(0, 8, null),
+                new TimedInterval(0, 10, null),
             ]);
         });
     });
@@ -145,11 +145,11 @@ describe("Tracks", () => {
 
     let trackA: Track<number>;
     let trackB: Track<number>;
-    let tracks: Tracks<number, TrackName>;
+    let tracks: Tracks<TrackName, number>;
 
     beforeEach(() => {
-        trackA = new Track("bass", 1.5, [{ start: 0, end: 10 }]);
-        trackB = new Track("treble", 2.0, [{ start: 5, end: 15 }]);
+        trackA = new Track("bass", [new TimedInterval(0, 10)], 1.5);
+        trackB = new Track("treble", [new TimedInterval(5, 15)], 2.0);
         tracks = new Tracks([
             { name: "bass", track: trackA },
             { name: "treble", track: trackB },
@@ -177,7 +177,7 @@ describe("Tracks", () => {
 
             const result = tracks.flatten();
 
-            expect(result.intervals).toEqual<TimedIntervalWithData<number>[]>([
+            expect(result.intervals).toEqual<TimedInterval<number>[]>([
                 { start: 0, end: 5, data: 1.5 },
                 { start: 5, end: 15, data: 2.0 },
             ]);

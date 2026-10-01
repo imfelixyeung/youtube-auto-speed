@@ -1,6 +1,6 @@
 import { CacheStore } from "./cache/store";
-import type { TimedInterval } from "./curve";
 import type { VideoData } from "./schemas/video-data";
+import { TimedInterval } from "./timed-interval";
 
 export type SmartSkipIntervals = TimedInterval[];
 
@@ -8,15 +8,14 @@ export const SMART_SKIP_CACHE = new CacheStore<SmartSkipIntervals>({
     size: 20,
 });
 
-export function parseFromVideoData(data: VideoData) {
+export function parseFromVideoData(data: VideoData): TimedInterval[] {
     return data.playerOverlays.playerOverlayRenderer.timelyActionsOverlayViewModel.timelyActionsOverlayViewModel.timelyActions.map(
-        (timings) => ({
-            start:
+        (timings) =>
+            new TimedInterval(
                 timings.timelyActionViewModel.smartSkipMetadata.loggingData
                     .startMilliseconds / 1000,
-            end:
                 timings.timelyActionViewModel.smartSkipMetadata.loggingData
                     .endMilliseconds / 1000,
-        }),
+            ),
     );
 }

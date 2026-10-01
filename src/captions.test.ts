@@ -3,6 +3,7 @@ import {
     _captionsToIntervals as captionsToIntervals,
     mergeIntervals,
 } from "./captions";
+import { TimedInterval } from "./timed-interval";
 import type { TimedText } from "./types";
 
 describe("mergeIntervals", () => {
@@ -11,58 +12,49 @@ describe("mergeIntervals", () => {
     });
 
     test("returns a single interval unchanged", () => {
-        expect(mergeIntervals([{ start: 1, end: 2 }])).toEqual([
-            { start: 1, end: 2 },
+        expect(mergeIntervals([new TimedInterval(1, 2)])).toEqual([
+            new TimedInterval(1, 2),
         ]);
     });
 
     test("merges overlapping intervals", () => {
         expect(
-            mergeIntervals([
-                { start: 1, end: 3 },
-                { start: 2, end: 4 },
-            ]),
-        ).toEqual([{ start: 1, end: 4 }]);
+            mergeIntervals([new TimedInterval(1, 3), new TimedInterval(2, 4)]),
+        ).toEqual([new TimedInterval(1, 4)]);
     });
 
     test("keeps the widest bounds when one interval contains another", () => {
         expect(
-            mergeIntervals([
-                { start: 1, end: 5 },
-                { start: 2, end: 3 },
-            ]),
-        ).toEqual([{ start: 1, end: 5 }]);
+            mergeIntervals([new TimedInterval(1, 5), new TimedInterval(2, 3)]),
+        ).toEqual([new TimedInterval(1, 5)]);
     });
 
     test("merges intervals closer than the gap threshold", () => {
         expect(
             mergeIntervals([
-                { start: 1, end: 2 },
-                { start: 2.04, end: 3 },
+                new TimedInterval(1, 2),
+                new TimedInterval(2.04, 3),
             ]),
-        ).toEqual([{ start: 1, end: 3 }]);
+        ).toEqual([new TimedInterval(1, 3)]);
     });
 
     test("keeps intervals beyond the gap threshold separate", () => {
         expect(
             mergeIntervals([
-                { start: 1, end: 2 },
-                { start: 2.06, end: 3 },
+                new TimedInterval(1, 2),
+                new TimedInterval(2.06, 3),
             ]),
-        ).toEqual([
-            { start: 1, end: 2 },
-            { start: 2.06, end: 3 },
-        ]);
+        ).toEqual([new TimedInterval(1, 2), new TimedInterval(2.06, 3)]);
     });
 
     test("chains merges through a merged interval", () => {
         expect(
             mergeIntervals([
-                { start: 1, end: 2 },
-                { start: 1.9, end: 3 },
-                { start: 3.04, end: 4 },
+                new TimedInterval(1, 2),
+                new TimedInterval(1.9, 3),
+                new TimedInterval(3.04, 4),
             ]),
-        ).toEqual([{ start: 1, end: 4 }]);
+        ).toEqual([new TimedInterval(1, 4)]);
     });
 });
 
@@ -82,7 +74,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(1, 3)]);
     });
 
     test("ignores events without text", () => {
@@ -93,7 +85,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 4.5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 4.5)]);
     });
 
     test("ignores [music] labels", () => {
@@ -112,7 +104,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 5)]);
     });
 
     test("treats [music] labels as case-insensitive", () => {
@@ -141,7 +133,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 5)]);
     });
 
     test('ignores any run of ">" markers with no caption body', () => {
@@ -170,7 +162,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 5)]);
     });
 
     test('treats ">> Hello world" as speech', () => {
@@ -184,7 +176,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(1, 3)]);
     });
 
     test('treats "[applause]" and "[laughter]" labels as non-speech', () => {
@@ -208,7 +200,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 5, end: 6 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(5, 6)]);
     });
 
     test('treats "(music)" as speech by default', () => {
@@ -222,7 +214,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(1, 3)]);
     });
 
     test('ignores "(music)" labels when the parenthesised filter is on', () => {
@@ -260,7 +252,7 @@ describe("captionsToIntervals", () => {
                 filterSquareBrackets: false,
                 filterParentheses: false,
             }),
-        ).toEqual([{ start: 1, end: 3 }]);
+        ).toEqual([new TimedInterval(1, 3)]);
     });
 
     test("strips parenthesised asides but keeps the speech around them", () => {
@@ -279,7 +271,7 @@ describe("captionsToIntervals", () => {
                 filterSquareBrackets: true,
                 filterParentheses: true,
             }),
-        ).toEqual([{ start: 1, end: 3 }]);
+        ).toEqual([new TimedInterval(1, 3)]);
     });
 
     test('treats "(music) [applause]" as non-speech with both filters on', () => {
@@ -352,8 +344,8 @@ describe("captionsToIntervals", () => {
         };
 
         expect(captionsToIntervals(data)).toEqual([
-            { start: 1, end: 3.1 },
-            { start: 5, end: 6 },
+            new TimedInterval(1, 3.1),
+            new TimedInterval(5, 6),
         ]);
     });
 });

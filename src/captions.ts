@@ -1,6 +1,6 @@
 import { CacheStore } from "./cache/store";
 import { REDACT_PADDING_END, REDACT_PADDING_START } from "./constants";
-import type { TimedInterval } from "./curve";
+import { TimedInterval } from "./timed-interval";
 import type { TimedText, TimedTextEventItem } from "./types";
 
 export const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
@@ -30,10 +30,7 @@ export function mergeIntervals(intervals: TimedInterval[]): TimedInterval[] {
         if (previous && interval.start <= previous.end + GAP_TO_MERGE) {
             previous.end = Math.max(previous.end, interval.end);
         } else {
-            merged.push({
-                start: interval.start,
-                end: interval.end,
-            });
+            merged.push(new TimedInterval(interval.start, interval.end));
         }
     }
 
@@ -84,10 +81,7 @@ function invert(data: TimedInterval[], duration: number): TimedInterval[] {
 
     for (const interval of data) {
         if (lastEnd !== interval.end) {
-            result.push({
-                start: lastEnd,
-                end: interval.start,
-            });
+            result.push(new TimedInterval(lastEnd, interval.start));
         }
         lastEnd = interval.end;
         if (lastEnd > duration) {
@@ -96,10 +90,7 @@ function invert(data: TimedInterval[], duration: number): TimedInterval[] {
         }
     }
 
-    result.push({
-        start: lastEnd,
-        end: duration,
-    });
+    result.push(new TimedInterval(lastEnd, duration));
 
     return result;
 }
@@ -141,10 +132,7 @@ export function _captionsToIntervals(
             ? Math.min(start + last.tOffsetMs / 1000 + segDuration, eventEnd)
             : eventEnd;
 
-        intervals.push({
-            start,
-            end,
-        });
+        intervals.push(new TimedInterval(start, end));
     }
 
     // Sort by start time.
@@ -211,10 +199,7 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
                 return;
             }
 
-            intervals.push({
-                start,
-                end,
-            });
+            intervals.push(new TimedInterval(start, end));
         });
     });
 

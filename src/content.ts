@@ -24,6 +24,7 @@ import {
 } from "./config";
 import { SpeedController } from "./controllers/speed";
 import { VolumeController } from "./controllers/volume";
+import type { TimedIntervalWithNumberData } from "./curve";
 import { getSkipSegments, type SkipSegment } from "./skip-segments/api";
 import {
     parseFromVideoData,
@@ -32,6 +33,7 @@ import {
 } from "./smart-skip";
 import { type InferTrackNames, Track, Tracks } from "./speed/tracks";
 import { formatTimeSavedRatio } from "./time-saved";
+import { TimedInterval } from "./timed-interval";
 import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,
@@ -70,74 +72,54 @@ import { clamp } from "./utils/clamp";
     const speedTracks = new Tracks([
         {
             name: "normal",
-            track: new Track(
-                "normal",
-                {
-                    label: "Normal",
-                    value: TALKING_SPEED.defaultValue,
-                },
-                [Track.infinite],
-            ),
+            track: new Track("normal", [Track.infinite], {
+                label: "Normal",
+                value: TALKING_SPEED.defaultValue,
+            }),
         },
         {
             name: "boost",
-            track: new Track(
-                "boost",
-                {
-                    label: "Boost",
-                    value: BOOST_SPEED.defaultValue,
-                },
-                [],
-            ),
+            track: new Track("boost", [], {
+                label: "Boost",
+                value: BOOST_SPEED.defaultValue,
+            }),
         },
         {
             name: "silent",
-            track: new Track(
-                "silent",
-                {
-                    label: "Silent",
-                    value: SILENT_SPEED.defaultValue,
-                },
-                [],
-            ),
+            track: new Track("silent", [], {
+                label: "Silent",
+                value: SILENT_SPEED.defaultValue,
+            }),
         },
         {
             name: "smartSkip",
-            track: new Track(
-                "smartSkip",
-                {
-                    label: "Smart Skip",
-                    value: SMART_SKIP_SPEED.defaultValue,
-                },
-                [],
-            ),
+            track: new Track("smartSkip", [], {
+                label: "Smart Skip",
+                value: SMART_SKIP_SPEED.defaultValue,
+            }),
         },
         {
             name: "skipSegments",
-            track: new Track(
-                "skipSegments",
-                {
-                    label: "Skip Segments",
-                    value: SKIP_SEGMENTS_SPEED.defaultValue,
-                },
-                [],
-            ),
+            track: new Track("skipSegments", [], {
+                label: "Skip Segments",
+                value: SKIP_SEGMENTS_SPEED.defaultValue,
+            }),
         },
     ]);
     const volumeTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", { label: "Normal", value: 1 }, [
-                { start: -Infinity, end: Infinity },
-            ]),
+            track: new Track("normal", [Track.infinite], {
+                label: "Normal",
+                value: 1,
+            }),
         },
         {
             name: "redact",
-            track: new Track(
-                "redact",
-                { label: "Redact", value: REDACT_VOLUME.defaultValue },
-                [],
-            ),
+            track: new Track("redact", [], {
+                label: "Redact",
+                value: REDACT_VOLUME.defaultValue,
+            }),
         },
     ]);
     let captionVersion = 0;
@@ -469,9 +451,10 @@ import { clamp } from "./utils/clamp";
                 filterSquareBrackets: config.filterSquareBrackets,
                 filterParentheses: config.filterParentheses,
             },
-        );
-        volumeTracks.get("redact").intervals =
-            captionsToRedactedIntervals(data);
+        ) as unknown as TimedIntervalWithNumberData[];
+        volumeTracks.get("redact").intervals = captionsToRedactedIntervals(
+            data,
+        ) as unknown as TimedIntervalWithNumberData[];
         speedTracks.flatten(true);
         volumeTracks.flatten(true);
         captionVersion++;
@@ -488,7 +471,8 @@ import { clamp } from "./utils/clamp";
     }
 
     function applySmartSkips(data: SmartSkipIntervals) {
-        speedTracks.get("smartSkip").intervals = data;
+        speedTracks.get("smartSkip").intervals =
+            data as unknown as TimedIntervalWithNumberData[];
         speedTracks.flatten(true);
         log(`Loaded ${data.length} smart skip intervals`, data);
         updateSpeed();
@@ -499,7 +483,7 @@ import { clamp } from "./utils/clamp";
     function applySkipSegments(data: SkipSegment[]) {
         speedTracks.get("skipSegments").intervals = data.map((seg) => {
             const [start, end] = seg.segment;
-            return { start, end };
+            return new TimedInterval(start, end);
         });
         speedTracks.flatten(true);
         log(`Loaded ${data.length} skip segments intervals`, data);
