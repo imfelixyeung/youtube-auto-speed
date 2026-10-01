@@ -3,15 +3,7 @@ import { REDACT_PADDING_END, REDACT_PADDING_START } from "./constants";
 import type { TimedInterval } from "./curve";
 import type { TimedText, TimedTextEventItem } from "./types";
 
-const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
-
-export function cacheTimedText(videoId: string, data: TimedText) {
-    return TIMED_TEXT_CACHE.set(videoId, data);
-}
-
-export function getCachedTimedText(videoId: string): TimedText | null {
-    return TIMED_TEXT_CACHE.get(videoId);
-}
+export const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
 
 /**
  * Merge overlapping / very-near caption intervals.

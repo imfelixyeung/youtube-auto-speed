@@ -1,9 +1,8 @@
 import "./content.css";
 import {
-    cacheTimedText,
     captionsToRedactedIntervals,
     captionsToSilentIntervals,
-    getCachedTimedText,
+    TIMED_TEXT_CACHE,
 } from "./captions";
 import { createChartOverlay } from "./chart-overlay";
 import {
@@ -27,9 +26,8 @@ import { SpeedController } from "./controllers/speed";
 import { VolumeController } from "./controllers/volume";
 import { getSkipSegments, type SkipSegment } from "./skip-segments/api";
 import {
-    cacheSmartSkips,
-    getCachedSmartSkips,
     parseFromVideoData,
+    SMART_SKIP_CACHE,
     type SmartSkipIntervals,
 } from "./smart-skip";
 import { type InferTrackNames, Track, Tracks } from "./speed/tracks";
@@ -546,7 +544,7 @@ import { clamp } from "./utils/clamp";
         speedTracks.get("skipSegments").intervals = [];
         speedTracks.flatten(true);
 
-        const smartSkips = getCachedSmartSkips(currentVideoId ?? "");
+        const smartSkips = SMART_SKIP_CACHE.get(currentVideoId ?? "");
         if (smartSkips) {
             applySmartSkips(smartSkips);
         }
@@ -554,7 +552,7 @@ import { clamp } from "./utils/clamp";
         // Reuse previously-intercepted captions for this video: YouTube
         // sometimes skips the timedtext request for a video it has already
         // loaded because of its own caches, so the interceptor never fires.
-        const cached = getCachedTimedText(currentVideoId ?? "");
+        const cached = TIMED_TEXT_CACHE.get(currentVideoId ?? "");
 
         if (cached) {
             applyCaptions(cached, "cache");
@@ -688,7 +686,7 @@ import { clamp } from "./utils/clamp";
 
         // Re-process the cached raw timedtext so current intervals reflect
         // the new filters immediately.
-        const cached = getCachedTimedText(currentVideoId ?? "");
+        const cached = TIMED_TEXT_CACHE.get(currentVideoId ?? "");
 
         if (cached) {
             applyCaptions(cached, "cache");
@@ -709,7 +707,7 @@ import { clamp } from "./utils/clamp";
         // Remember the raw data so a later visit to the same video still has
         // speed intervals even when YouTube serves the captions from its own
         // caches and never re-fetches timedtext.
-        cacheTimedText(videoId, data);
+        TIMED_TEXT_CACHE.set(videoId, data);
 
         if (videoId !== currentVideoId) {
             return;
@@ -720,9 +718,9 @@ import { clamp } from "./utils/clamp";
 
     window.addEventListener("AUTO_SPEED_GET_WATCH", (event) => {
         const { videoId, data } = (event as AutoSpeedVideoDataEvent).detail;
-        if (getCachedSmartSkips(videoId)) return;
+        if (SMART_SKIP_CACHE.get(videoId)) return;
         const smartSkips = parseFromVideoData(data);
-        cacheSmartSkips(videoId, smartSkips);
+        SMART_SKIP_CACHE.set(videoId, smartSkips);
         if (videoId !== currentVideoId) {
             return;
         }
