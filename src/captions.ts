@@ -96,12 +96,10 @@ export function _captionsToIntervals(
  */
 export function captionsToSilentIntervals(
     data: TimedText | null,
-    duration: number,
     options: NonSpeechOptions = DEFAULT_NON_SPEECH_OPTIONS,
 ): TimedInterval[] {
     return TimedInterval.invert(
         TimedInterval.merge(_captionsToIntervals(data, options)),
-        duration,
     );
 }
 

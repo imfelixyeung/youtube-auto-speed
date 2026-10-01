@@ -30,25 +30,18 @@ export class TimedInterval<D = void> {
         return merged;
     }
 
-    public static invert(
-        data: TimedInterval[],
-        duration: number,
-    ): TimedInterval[] {
+    public static invert(data: TimedInterval[]): TimedInterval[] {
         const result: TimedInterval[] = [];
-        let lastEnd = 0;
+        let lastEnd = -Infinity;
 
         for (const interval of data) {
             if (lastEnd !== interval.end) {
                 result.push(new TimedInterval(lastEnd, interval.start));
             }
             lastEnd = interval.end;
-            if (lastEnd > duration) {
-                lastEnd = duration;
-                break;
-            }
         }
 
-        result.push(new TimedInterval(lastEnd, duration));
+        result.push(new TimedInterval(lastEnd, Infinity));
         return result;
     }
 }

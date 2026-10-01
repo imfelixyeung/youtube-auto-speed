@@ -444,14 +444,10 @@ import { clamp } from "./utils/clamp";
     }
 
     function applyCaptions(data: TimedText, source: "cache" | "network") {
-        speedTracks.get("silent").intervals = captionsToSilentIntervals(
-            data,
-            video?.duration ?? 0,
-            {
-                filterSquareBrackets: config.filterSquareBrackets,
-                filterParentheses: config.filterParentheses,
-            },
-        ) as unknown as TimedIntervalWithNumberData[];
+        speedTracks.get("silent").intervals = captionsToSilentIntervals(data, {
+            filterSquareBrackets: config.filterSquareBrackets,
+            filterParentheses: config.filterParentheses,
+        }) as unknown as TimedIntervalWithNumberData[];
         volumeTracks.get("redact").intervals = captionsToRedactedIntervals(
             data,
         ) as unknown as TimedIntervalWithNumberData[];
