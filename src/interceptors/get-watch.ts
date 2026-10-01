@@ -20,8 +20,9 @@ export class GetWatchInterceptor extends Interceptor {
 
     public init(): void {
         const handleInitialData = () => {
+            if (!("ytInitialData" in window)) return;
             videoDataSchema
-                .parseAsync((window as any).ytInitialData)
+                .parseAsync(window.ytInitialData)
                 .then(GetWatchInterceptor.handleVideoData)
                 .catch(() => null);
         };
