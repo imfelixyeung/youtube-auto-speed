@@ -23,7 +23,7 @@ export const PRESERVE_PITCH_ENABLED = new BooleanConfig({
     defaultValue: true,
 });
 
-export const SPEED_STEP = 0.05;
+export const SPEED_STEP = 0.25;
 
 export const RAMP_DURATION = new NumberConfig({
     displayName: "Ramp duration (s)",
@@ -153,4 +153,10 @@ export const REDACT_VOLUME = new NumberConfig({
     min: 0,
     max: 1,
     step: 0.05,
+});
+
+export const WARP_SPEED = new BooleanConfig({
+    displayName: "Enable warp speed animation",
+    storageKey: "warpSpeedEnabled",
+    defaultValue: false,
 });
