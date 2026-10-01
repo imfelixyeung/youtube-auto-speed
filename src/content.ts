@@ -79,10 +79,15 @@ import { clamp } from "./utils/clamp";
         },
         {
             name: "boost",
-            track: new Track("boost", [], {
-                label: "Boost",
-                value: BOOST_SPEED.defaultValue,
-            }),
+            track: new Track(
+                "boost",
+                [Track.infinite],
+                {
+                    label: "Boost",
+                    value: BOOST_SPEED.defaultValue,
+                },
+                false,
+            ),
         },
         {
             name: "silent",
@@ -139,12 +144,12 @@ import { clamp } from "./utils/clamp";
 
     const onBoostStart = () => {
         config.boostAt = Date.now();
-        speedTracks.get("boost").intervals = [Track.infinite];
+        speedTracks.get("boost").enabled = true;
         setBoostSpeed(config.boostSpeed);
     };
     const onBoostEnd = () => {
         config.boostAt = 0;
-        speedTracks.get("boost").intervals = [];
+        speedTracks.get("boost").enabled = false;
         setBoostSpeed(config.boostSpeed);
     };
 
