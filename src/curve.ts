@@ -1,5 +1,3 @@
-import { clamp } from "./utils/clamp";
-
 export type TimedInterval = {
     start: number;
     end: number;
@@ -12,10 +10,6 @@ export type TimedIntervalWithNumberData = TimedIntervalWithData<{
 }>;
 
 export type EasingFn = (t: number) => number;
-
-export function clamp01(value: number) {
-    return clamp(value, 0, 1);
-}
 
 export type Neighbors = {
     current: TimedIntervalWithNumberData | null;

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { easeCubicInOut } from "d3-ease";
 import {
-    clamp01,
     computeValueAtTime,
     sampleCurve,
     type TimedIntervalWithNumberData,
@@ -13,16 +12,6 @@ const baseConfig = {
     rampDuration: 1,
     easingFn: easeCubicInOut,
 };
-
-describe("clamp01", () => {
-    test("clamps values into [0, 1]", () => {
-        expect(clamp01(-1)).toBe(0);
-        expect(clamp01(0)).toBe(0);
-        expect(clamp01(0.5)).toBe(0.5);
-        expect(clamp01(1)).toBe(1);
-        expect(clamp01(2)).toBe(1);
-    });
-});
 
 describe("computeSpeedAtTime", () => {
     const first: TimedIntervalWithNumberData = {
