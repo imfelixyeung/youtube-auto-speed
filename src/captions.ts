@@ -6,38 +6,6 @@ import type { TimedText, TimedTextEventItem } from "./types";
 export const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
 
 /**
- * Merge overlapping / very-near caption intervals.
- *
- * This prevents:
- *
- * 10.0 - 10.5
- * 10.5 - 11.2
- *
- * becoming two separate speech periods.
- */
-export function mergeIntervals(intervals: TimedInterval[]): TimedInterval[] {
-    if (intervals.length === 0) {
-        return [];
-    }
-
-    const merged: TimedInterval[] = [];
-
-    const GAP_TO_MERGE = 0.05;
-
-    for (const interval of intervals) {
-        const previous = merged[merged.length - 1];
-
-        if (previous && interval.start <= previous.end + GAP_TO_MERGE) {
-            previous.end = Math.max(previous.end, interval.end);
-        } else {
-            merged.push(new TimedInterval(interval.start, interval.end));
-        }
-    }
-
-    return merged;
-}
-
-/**
  * Which non-speech caption fragments (labels, markers, etc.) to strip out
  * of caption text before deciding whether it contains speech.
  */
@@ -73,26 +41,6 @@ function stripNonSpeech(text: string, options: NonSpeechOptions): string {
 
 function isNonSpeech(text: string, options: NonSpeechOptions): boolean {
     return stripNonSpeech(text, options).trim() === "";
-}
-
-function invert(data: TimedInterval[], duration: number): TimedInterval[] {
-    const result: TimedInterval[] = [];
-    let lastEnd = 0;
-
-    for (const interval of data) {
-        if (lastEnd !== interval.end) {
-            result.push(new TimedInterval(lastEnd, interval.start));
-        }
-        lastEnd = interval.end;
-        if (lastEnd > duration) {
-            lastEnd = duration;
-            break;
-        }
-    }
-
-    result.push(new TimedInterval(lastEnd, duration));
-
-    return result;
 }
 
 /**
@@ -138,7 +86,7 @@ export function _captionsToIntervals(
     // Sort by start time.
     intervals.sort((a, b) => a.start - b.start);
 
-    return mergeIntervals(intervals);
+    return TimedInterval.merge(intervals);
 }
 
 /**
@@ -151,8 +99,8 @@ export function captionsToSilentIntervals(
     duration: number,
     options: NonSpeechOptions = DEFAULT_NON_SPEECH_OPTIONS,
 ): TimedInterval[] {
-    return invert(
-        mergeIntervals(_captionsToIntervals(data, options)),
+    return TimedInterval.invert(
+        TimedInterval.merge(_captionsToIntervals(data, options)),
         duration,
     );
 }
@@ -205,7 +153,7 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
 
     // Sort by start time.
     intervals.sort((a, b) => a.start - b.start);
-    return mergeIntervals(intervals);
+    return TimedInterval.merge(intervals);
 }
 
 function isValidEvent(event: TimedTextEventItem | undefined): event is Omit<

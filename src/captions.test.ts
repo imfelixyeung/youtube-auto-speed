@@ -1,62 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import {
-    _captionsToIntervals as captionsToIntervals,
-    mergeIntervals,
-} from "./captions";
+import { _captionsToIntervals as captionsToIntervals } from "./captions";
 import { TimedInterval } from "./timed-interval";
 import type { TimedText } from "./types";
-
-describe("mergeIntervals", () => {
-    test("returns an empty array for empty input", () => {
-        expect(mergeIntervals([])).toEqual([]);
-    });
-
-    test("returns a single interval unchanged", () => {
-        expect(mergeIntervals([new TimedInterval(1, 2)])).toEqual([
-            new TimedInterval(1, 2),
-        ]);
-    });
-
-    test("merges overlapping intervals", () => {
-        expect(
-            mergeIntervals([new TimedInterval(1, 3), new TimedInterval(2, 4)]),
-        ).toEqual([new TimedInterval(1, 4)]);
-    });
-
-    test("keeps the widest bounds when one interval contains another", () => {
-        expect(
-            mergeIntervals([new TimedInterval(1, 5), new TimedInterval(2, 3)]),
-        ).toEqual([new TimedInterval(1, 5)]);
-    });
-
-    test("merges intervals closer than the gap threshold", () => {
-        expect(
-            mergeIntervals([
-                new TimedInterval(1, 2),
-                new TimedInterval(2.04, 3),
-            ]),
-        ).toEqual([new TimedInterval(1, 3)]);
-    });
-
-    test("keeps intervals beyond the gap threshold separate", () => {
-        expect(
-            mergeIntervals([
-                new TimedInterval(1, 2),
-                new TimedInterval(2.06, 3),
-            ]),
-        ).toEqual([new TimedInterval(1, 2), new TimedInterval(2.06, 3)]);
-    });
-
-    test("chains merges through a merged interval", () => {
-        expect(
-            mergeIntervals([
-                new TimedInterval(1, 2),
-                new TimedInterval(1.9, 3),
-                new TimedInterval(3.04, 4),
-            ]),
-        ).toEqual([new TimedInterval(1, 4)]);
-    });
-});
 
 describe("captionsToIntervals", () => {
     test("returns an empty array for null data", () => {
