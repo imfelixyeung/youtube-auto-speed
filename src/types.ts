@@ -23,6 +23,7 @@ export type AutoSpeedConfig = {
         enabled: boolean;
         volume: number;
     };
+    warpSpeedEnabled: boolean;
 } & {
     [key in AutoSpeedConfigSpeedKey]: number;
 };
