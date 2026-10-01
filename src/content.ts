@@ -330,16 +330,6 @@ import { clamp } from "./utils/clamp";
         speed.set(1);
     }
 
-    function handleDurationChange() {
-        if (!video) {
-            return;
-        }
-        speedTracks.get("normal").intervals = [
-            { start: 0, end: video.duration },
-        ];
-        updateChart();
-    }
-
     function detachVideo() {
         unlistenX2Speed();
         unlistenVolumeChange();
@@ -354,7 +344,6 @@ import { clamp } from "./utils/clamp";
         video.removeEventListener("ended", handleEnded);
         video.removeEventListener("seeked", updateSpeed);
         video.removeEventListener("loadedmetadata", updateChart);
-        video.removeEventListener("durationchange", handleDurationChange);
 
         video = null;
     }
@@ -381,8 +370,6 @@ import { clamp } from "./utils/clamp";
         video.addEventListener("ended", handleEnded);
         video.addEventListener("seeked", updateSpeed);
         video.addEventListener("loadedmetadata", updateChart);
-        video.addEventListener("durationchange", handleDurationChange);
-        handleDurationChange();
     }
 
     function unlistenX2Speed() {
