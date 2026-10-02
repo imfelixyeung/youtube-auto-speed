@@ -18,7 +18,7 @@ export abstract class ConfigType<
     private emitter = new Emitter<{
         change: [value: T];
     }>();
-    protected schema: z.ZodType<T> | null = null;
+    public schema: z.ZodType<T> | null = null;
 
     /**
      * Child classes must set {@link schema} and call {@link linkStorage}
