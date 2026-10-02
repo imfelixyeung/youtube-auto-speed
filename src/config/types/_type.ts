@@ -1,4 +1,5 @@
 import { Emitter, type Listener } from "strict-event-emitter";
+import { z } from "zod";
 
 export type ConfigTypeProps<T> = {
     displayName: string;
@@ -17,16 +18,25 @@ export abstract class ConfigType<
     private emitter = new Emitter<{
         change: [value: T];
     }>();
+    protected schema: z.ZodType<T> | null = null;
 
+    /**
+     * Child classes must set {@link schema} and call {@link linkStorage}
+     */
     constructor(props: ConfigTypeProps<T>) {
         this.displayName = props.displayName;
         this.storageKey = props.storageKey;
         this.defaultValue = props.defaultValue;
         this.value = this.defaultValue;
+    }
 
+    protected linkStorage() {
         const handleStorageValue = (value: T) => {
             if (value === undefined) return;
-            this.setWithoutSaving(value);
+            if (this.schema === null) return this.setWithoutSaving(value);
+            const parsed = this.schema.safeParse(value);
+            if (parsed.error) return;
+            this.setWithoutSaving(parsed.data);
         };
 
         chrome.storage.sync.get([this.storageKey], (result) => {
@@ -36,6 +46,10 @@ export abstract class ConfigType<
             if (areaName !== "sync") return;
             handleStorageValue(changes[this.storageKey]?.newValue as T);
         });
+    }
+
+    protected makeSchema(): z.ZodType<T> {
+        return z.any();
     }
 
     public set(value: T) {

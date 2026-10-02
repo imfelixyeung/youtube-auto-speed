@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { clamp } from "../../utils/clamp";
 import { ConfigType, type ConfigTypeProps } from "./_type";
 
@@ -19,6 +20,12 @@ export class NumberConfig extends ConfigType<NumberConfigType> {
         this.min = props.min;
         this.max = props.max;
         this.step = props.step;
+        this.schema = this.makeSchema();
+        this.linkStorage();
+    }
+
+    protected makeSchema() {
+        return z.number().min(this.min).max(this.max).multipleOf(this.step);
     }
 
     public set(value: NumberConfigType) {
