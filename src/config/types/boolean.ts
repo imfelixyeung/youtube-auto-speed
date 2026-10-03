@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { ConfigType, type ConfigTypeProps } from "./_type";
 
 export type BooleanConfigType = boolean;
@@ -5,6 +6,12 @@ export type BooleanConfigType = boolean;
 export type BooleanConfigProps = ConfigTypeProps<BooleanConfigType>;
 
 export class BooleanConfig extends ConfigType<BooleanConfigType> {
+    constructor(props: BooleanConfigProps) {
+        super(props);
+        this.schema = this.makeSchema();
+        this.linkStorage();
+    }
+
     public attachToElement(element: HTMLInputElement) {
         element.type = "checkbox";
         element.className = "toggle";
@@ -21,5 +28,9 @@ export class BooleanConfig extends ConfigType<BooleanConfigType> {
             }
             element.checked = newValue;
         });
+    }
+
+    protected makeSchema() {
+        return z.boolean();
     }
 }

@@ -1,9 +1,8 @@
 import "./content.css";
 import {
-    cacheTimedText,
     captionsToRedactedIntervals,
     captionsToSilentIntervals,
-    getCachedTimedText,
+    TIMED_TEXT_CACHE,
 } from "./captions";
 import { createChartOverlay } from "./chart-overlay";
 import {
@@ -25,15 +24,16 @@ import {
 } from "./config";
 import { SpeedController } from "./controllers/speed";
 import { VolumeController } from "./controllers/volume";
+import type { TimedIntervalWithNumberData } from "./curve";
 import { getSkipSegments, type SkipSegment } from "./skip-segments/api";
 import {
-    cacheSmartSkips,
-    getCachedSmartSkips,
     parseFromVideoData,
+    SMART_SKIP_CACHE,
     type SmartSkipIntervals,
 } from "./smart-skip";
 import { type InferTrackNames, Track, Tracks } from "./speed/tracks";
 import { formatTimeSavedRatio } from "./time-saved";
+import { TimedInterval } from "./timed-interval";
 import type {
     AutoSpeedCaptionsEvent,
     AutoSpeedConfig,
@@ -72,74 +72,59 @@ import { clamp } from "./utils/clamp";
     const speedTracks = new Tracks([
         {
             name: "normal",
-            track: new Track(
-                "normal",
-                {
-                    label: "Normal",
-                    value: TALKING_SPEED.defaultValue,
-                },
-                [Track.infinite],
-            ),
+            track: new Track("normal", [Track.infinite], {
+                label: "Normal",
+                value: TALKING_SPEED.defaultValue,
+            }),
         },
         {
             name: "boost",
             track: new Track(
                 "boost",
+                [Track.infinite],
                 {
                     label: "Boost",
                     value: BOOST_SPEED.defaultValue,
                 },
-                [],
+                false,
             ),
         },
         {
             name: "silent",
-            track: new Track(
-                "silent",
-                {
-                    label: "Silent",
-                    value: SILENT_SPEED.defaultValue,
-                },
-                [],
-            ),
+            track: new Track("silent", [], {
+                label: "Silent",
+                value: SILENT_SPEED.defaultValue,
+            }),
         },
         {
             name: "smartSkip",
-            track: new Track(
-                "smartSkip",
-                {
-                    label: "Smart Skip",
-                    value: SMART_SKIP_SPEED.defaultValue,
-                },
-                [],
-            ),
+            track: new Track("smartSkip", [], {
+                label: "Smart Skip",
+                value: SMART_SKIP_SPEED.defaultValue,
+            }),
         },
         {
             name: "skipSegments",
-            track: new Track(
-                "skipSegments",
-                {
-                    label: "Skip Segments",
-                    value: SKIP_SEGMENTS_SPEED.defaultValue,
-                },
-                [],
-            ),
+            track: new Track("skipSegments", [], {
+                label: "Skip Segments",
+                value: SKIP_SEGMENTS_SPEED.defaultValue,
+            }),
         },
     ]);
     const volumeTracks = new Tracks([
         {
             name: "normal",
-            track: new Track("normal", { label: "Normal", value: 1 }, [
-                { start: -Infinity, end: Infinity },
-            ]),
+            track: new Track("normal", [Track.infinite], {
+                label: "Normal",
+                value: 1,
+            }),
         },
         {
             name: "redact",
-            track: new Track(
-                "redact",
-                { label: "Redact", value: REDACT_VOLUME.defaultValue },
-                [],
-            ),
+            track: new Track("redact", [], {
+                label: "Redact",
+                value: REDACT_VOLUME.defaultValue,
+            }),
         },
     ]);
     let captionVersion = 0;
@@ -159,12 +144,12 @@ import { clamp } from "./utils/clamp";
 
     const onBoostStart = () => {
         config.boostAt = Date.now();
-        speedTracks.get("boost").intervals = [Track.infinite];
+        speedTracks.get("boost").enabled = true;
         setBoostSpeed(config.boostSpeed);
     };
     const onBoostEnd = () => {
         config.boostAt = 0;
-        speedTracks.get("boost").intervals = [];
+        speedTracks.get("boost").enabled = false;
         setBoostSpeed(config.boostSpeed);
     };
 
@@ -332,16 +317,6 @@ import { clamp } from "./utils/clamp";
         speed.set(1);
     }
 
-    function handleDurationChange() {
-        if (!video) {
-            return;
-        }
-        speedTracks.get("normal").intervals = [
-            { start: 0, end: video.duration },
-        ];
-        updateChart();
-    }
-
     function detachVideo() {
         unlistenX2Speed();
         unlistenVolumeChange();
@@ -356,7 +331,6 @@ import { clamp } from "./utils/clamp";
         video.removeEventListener("ended", handleEnded);
         video.removeEventListener("seeked", updateSpeed);
         video.removeEventListener("loadedmetadata", updateChart);
-        video.removeEventListener("durationchange", handleDurationChange);
 
         video = null;
     }
@@ -383,8 +357,6 @@ import { clamp } from "./utils/clamp";
         video.addEventListener("ended", handleEnded);
         video.addEventListener("seeked", updateSpeed);
         video.addEventListener("loadedmetadata", updateChart);
-        video.addEventListener("durationchange", handleDurationChange);
-        handleDurationChange();
     }
 
     function unlistenX2Speed() {
@@ -477,16 +449,13 @@ import { clamp } from "./utils/clamp";
     }
 
     function applyCaptions(data: TimedText, source: "cache" | "network") {
-        speedTracks.get("silent").intervals = captionsToSilentIntervals(
+        speedTracks.get("silent").intervals = captionsToSilentIntervals(data, {
+            filterSquareBrackets: config.filterSquareBrackets,
+            filterParentheses: config.filterParentheses,
+        }) as unknown as TimedIntervalWithNumberData[];
+        volumeTracks.get("redact").intervals = captionsToRedactedIntervals(
             data,
-            video?.duration ?? 0,
-            {
-                filterSquareBrackets: config.filterSquareBrackets,
-                filterParentheses: config.filterParentheses,
-            },
-        );
-        volumeTracks.get("redact").intervals =
-            captionsToRedactedIntervals(data);
+        ) as unknown as TimedIntervalWithNumberData[];
         speedTracks.flatten(true);
         volumeTracks.flatten(true);
         captionVersion++;
@@ -503,7 +472,8 @@ import { clamp } from "./utils/clamp";
     }
 
     function applySmartSkips(data: SmartSkipIntervals) {
-        speedTracks.get("smartSkip").intervals = data;
+        speedTracks.get("smartSkip").intervals =
+            data as unknown as TimedIntervalWithNumberData[];
         speedTracks.flatten(true);
         log(`Loaded ${data.length} smart skip intervals`, data);
         updateSpeed();
@@ -514,7 +484,7 @@ import { clamp } from "./utils/clamp";
     function applySkipSegments(data: SkipSegment[]) {
         speedTracks.get("skipSegments").intervals = data.map((seg) => {
             const [start, end] = seg.segment;
-            return { start, end };
+            return new TimedInterval(start, end);
         });
         speedTracks.flatten(true);
         log(`Loaded ${data.length} skip segments intervals`, data);
@@ -546,7 +516,7 @@ import { clamp } from "./utils/clamp";
         speedTracks.get("skipSegments").intervals = [];
         speedTracks.flatten(true);
 
-        const smartSkips = getCachedSmartSkips(currentVideoId ?? "");
+        const smartSkips = SMART_SKIP_CACHE.get(currentVideoId ?? "");
         if (smartSkips) {
             applySmartSkips(smartSkips);
         }
@@ -554,7 +524,7 @@ import { clamp } from "./utils/clamp";
         // Reuse previously-intercepted captions for this video: YouTube
         // sometimes skips the timedtext request for a video it has already
         // loaded because of its own caches, so the interceptor never fires.
-        const cached = getCachedTimedText(currentVideoId ?? "");
+        const cached = TIMED_TEXT_CACHE.get(currentVideoId ?? "");
 
         if (cached) {
             applyCaptions(cached, "cache");
@@ -688,7 +658,7 @@ import { clamp } from "./utils/clamp";
 
         // Re-process the cached raw timedtext so current intervals reflect
         // the new filters immediately.
-        const cached = getCachedTimedText(currentVideoId ?? "");
+        const cached = TIMED_TEXT_CACHE.get(currentVideoId ?? "");
 
         if (cached) {
             applyCaptions(cached, "cache");
@@ -709,7 +679,7 @@ import { clamp } from "./utils/clamp";
         // Remember the raw data so a later visit to the same video still has
         // speed intervals even when YouTube serves the captions from its own
         // caches and never re-fetches timedtext.
-        cacheTimedText(videoId, data);
+        TIMED_TEXT_CACHE.set(videoId, data);
 
         if (videoId !== currentVideoId) {
             return;
@@ -720,9 +690,9 @@ import { clamp } from "./utils/clamp";
 
     window.addEventListener("AUTO_SPEED_GET_WATCH", (event) => {
         const { videoId, data } = (event as AutoSpeedVideoDataEvent).detail;
-        if (getCachedSmartSkips(videoId)) return;
+        if (SMART_SKIP_CACHE.get(videoId)) return;
         const smartSkips = parseFromVideoData(data);
-        cacheSmartSkips(videoId, smartSkips);
+        SMART_SKIP_CACHE.set(videoId, smartSkips);
         if (videoId !== currentVideoId) {
             return;
         }

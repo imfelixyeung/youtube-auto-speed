@@ -1,52 +1,9 @@
 import { CacheStore } from "./cache/store";
 import { REDACT_PADDING_END, REDACT_PADDING_START } from "./constants";
-import type { TimedInterval } from "./curve";
+import { TimedInterval } from "./timed-interval";
 import type { TimedText, TimedTextEventItem } from "./types";
 
-const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
-
-export function cacheTimedText(videoId: string, data: TimedText) {
-    return TIMED_TEXT_CACHE.set(videoId, data);
-}
-
-export function getCachedTimedText(videoId: string): TimedText | null {
-    return TIMED_TEXT_CACHE.get(videoId);
-}
-
-/**
- * Merge overlapping / very-near caption intervals.
- *
- * This prevents:
- *
- * 10.0 - 10.5
- * 10.5 - 11.2
- *
- * becoming two separate speech periods.
- */
-export function mergeIntervals(intervals: TimedInterval[]): TimedInterval[] {
-    if (intervals.length === 0) {
-        return [];
-    }
-
-    const merged: TimedInterval[] = [];
-
-    const GAP_TO_MERGE = 0.05;
-
-    for (const interval of intervals) {
-        const previous = merged[merged.length - 1];
-
-        if (previous && interval.start <= previous.end + GAP_TO_MERGE) {
-            previous.end = Math.max(previous.end, interval.end);
-        } else {
-            merged.push({
-                start: interval.start,
-                end: interval.end,
-            });
-        }
-    }
-
-    return merged;
-}
+export const TIMED_TEXT_CACHE = new CacheStore<TimedText>({ size: 20 });
 
 /**
  * Which non-speech caption fragments (labels, markers, etc.) to strip out
@@ -86,32 +43,6 @@ function isNonSpeech(text: string, options: NonSpeechOptions): boolean {
     return stripNonSpeech(text, options).trim() === "";
 }
 
-function invert(data: TimedInterval[], duration: number): TimedInterval[] {
-    const result: TimedInterval[] = [];
-    let lastEnd = 0;
-
-    for (const interval of data) {
-        if (lastEnd !== interval.end) {
-            result.push({
-                start: lastEnd,
-                end: interval.start,
-            });
-        }
-        lastEnd = interval.end;
-        if (lastEnd > duration) {
-            lastEnd = duration;
-            break;
-        }
-    }
-
-    result.push({
-        start: lastEnd,
-        end: duration,
-    });
-
-    return result;
-}
-
 /**
  * Convert raw timedtext events into a sorted list of merged speech
  * intervals (in seconds). Empty and non-speech caption events are
@@ -149,16 +80,13 @@ export function _captionsToIntervals(
             ? Math.min(start + last.tOffsetMs / 1000 + segDuration, eventEnd)
             : eventEnd;
 
-        intervals.push({
-            start,
-            end,
-        });
+        intervals.push(new TimedInterval(start, end));
     }
 
     // Sort by start time.
     intervals.sort((a, b) => a.start - b.start);
 
-    return mergeIntervals(intervals);
+    return TimedInterval.merge(intervals);
 }
 
 /**
@@ -168,12 +96,10 @@ export function _captionsToIntervals(
  */
 export function captionsToSilentIntervals(
     data: TimedText | null,
-    duration: number,
     options: NonSpeechOptions = DEFAULT_NON_SPEECH_OPTIONS,
 ): TimedInterval[] {
-    return invert(
-        mergeIntervals(_captionsToIntervals(data, options)),
-        duration,
+    return TimedInterval.invert(
+        TimedInterval.merge(_captionsToIntervals(data, options)),
     );
 }
 
@@ -219,16 +145,13 @@ export function captionsToRedactedIntervals(data: TimedText): TimedInterval[] {
                 return;
             }
 
-            intervals.push({
-                start,
-                end,
-            });
+            intervals.push(new TimedInterval(start, end));
         });
     });
 
     // Sort by start time.
     intervals.sort((a, b) => a.start - b.start);
-    return mergeIntervals(intervals);
+    return TimedInterval.merge(intervals);
 }
 
 function isValidEvent(event: TimedTextEventItem | undefined): event is Omit<

@@ -21,7 +21,7 @@ import {
     timeSavedAt,
 } from "./time-saved";
 import { type AutoSpeedConfig, autoSpeedConfigSpeedKeys } from "./types";
-import { cssVar } from "./utils";
+import { cssVar } from "./utils/css-var";
 import { Warpspeed } from "./warpspeed";
 
 export type ChartData = {

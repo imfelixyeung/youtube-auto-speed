@@ -1,72 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import {
-    cacheTimedText,
-    _captionsToIntervals as captionsToIntervals,
-    getCachedTimedText,
-    mergeIntervals,
-} from "./captions";
+import { _captionsToIntervals as captionsToIntervals } from "./captions";
+import { TimedInterval } from "./timed-interval";
 import type { TimedText } from "./types";
-
-describe("mergeIntervals", () => {
-    test("returns an empty array for empty input", () => {
-        expect(mergeIntervals([])).toEqual([]);
-    });
-
-    test("returns a single interval unchanged", () => {
-        expect(mergeIntervals([{ start: 1, end: 2 }])).toEqual([
-            { start: 1, end: 2 },
-        ]);
-    });
-
-    test("merges overlapping intervals", () => {
-        expect(
-            mergeIntervals([
-                { start: 1, end: 3 },
-                { start: 2, end: 4 },
-            ]),
-        ).toEqual([{ start: 1, end: 4 }]);
-    });
-
-    test("keeps the widest bounds when one interval contains another", () => {
-        expect(
-            mergeIntervals([
-                { start: 1, end: 5 },
-                { start: 2, end: 3 },
-            ]),
-        ).toEqual([{ start: 1, end: 5 }]);
-    });
-
-    test("merges intervals closer than the gap threshold", () => {
-        expect(
-            mergeIntervals([
-                { start: 1, end: 2 },
-                { start: 2.04, end: 3 },
-            ]),
-        ).toEqual([{ start: 1, end: 3 }]);
-    });
-
-    test("keeps intervals beyond the gap threshold separate", () => {
-        expect(
-            mergeIntervals([
-                { start: 1, end: 2 },
-                { start: 2.06, end: 3 },
-            ]),
-        ).toEqual([
-            { start: 1, end: 2 },
-            { start: 2.06, end: 3 },
-        ]);
-    });
-
-    test("chains merges through a merged interval", () => {
-        expect(
-            mergeIntervals([
-                { start: 1, end: 2 },
-                { start: 1.9, end: 3 },
-                { start: 3.04, end: 4 },
-            ]),
-        ).toEqual([{ start: 1, end: 4 }]);
-    });
-});
 
 describe("captionsToIntervals", () => {
     test("returns an empty array for null data", () => {
@@ -84,7 +19,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(1, 3)]);
     });
 
     test("ignores events without text", () => {
@@ -95,7 +30,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 4.5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 4.5)]);
     });
 
     test("ignores [music] labels", () => {
@@ -114,7 +49,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 5)]);
     });
 
     test("treats [music] labels as case-insensitive", () => {
@@ -143,7 +78,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 5)]);
     });
 
     test('ignores any run of ">" markers with no caption body', () => {
@@ -172,7 +107,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 4, end: 5 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(4, 5)]);
     });
 
     test('treats ">> Hello world" as speech', () => {
@@ -186,7 +121,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(1, 3)]);
     });
 
     test('treats "[applause]" and "[laughter]" labels as non-speech', () => {
@@ -210,7 +145,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 5, end: 6 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(5, 6)]);
     });
 
     test('treats "(music)" as speech by default', () => {
@@ -224,7 +159,7 @@ describe("captionsToIntervals", () => {
             ],
         };
 
-        expect(captionsToIntervals(data)).toEqual([{ start: 1, end: 3 }]);
+        expect(captionsToIntervals(data)).toEqual([new TimedInterval(1, 3)]);
     });
 
     test('ignores "(music)" labels when the parenthesised filter is on', () => {
@@ -262,7 +197,7 @@ describe("captionsToIntervals", () => {
                 filterSquareBrackets: false,
                 filterParentheses: false,
             }),
-        ).toEqual([{ start: 1, end: 3 }]);
+        ).toEqual([new TimedInterval(1, 3)]);
     });
 
     test("strips parenthesised asides but keeps the speech around them", () => {
@@ -281,7 +216,7 @@ describe("captionsToIntervals", () => {
                 filterSquareBrackets: true,
                 filterParentheses: true,
             }),
-        ).toEqual([{ start: 1, end: 3 }]);
+        ).toEqual([new TimedInterval(1, 3)]);
     });
 
     test('treats "(music) [applause]" as non-speech with both filters on', () => {
@@ -354,73 +289,8 @@ describe("captionsToIntervals", () => {
         };
 
         expect(captionsToIntervals(data)).toEqual([
-            { start: 1, end: 3.1 },
-            { start: 5, end: 6 },
+            new TimedInterval(1, 3.1),
+            new TimedInterval(5, 6),
         ]);
-    });
-});
-
-describe("timedtext cache", () => {
-    test("returns null before anything is cached", () => {
-        expect(getCachedTimedText("video-a")).toBeNull();
-    });
-
-    test("returns the cached data for the matching video", () => {
-        const data: TimedText = {
-            events: [
-                { tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: "hi" }] },
-            ],
-        };
-
-        cacheTimedText("video-a", data);
-
-        expect(getCachedTimedText("video-a")).toEqual(data);
-        expect(getCachedTimedText("video-b")).toBeNull();
-    });
-
-    test("replaces data for a re-cached video", () => {
-        cacheTimedText("video-a", {
-            events: [{ tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "old" }] }],
-        });
-        cacheTimedText("video-a", {
-            events: [{ tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "new" }] }],
-        });
-
-        expect(getCachedTimedText("video-a")?.events[0]?.segs?.[0]?.utf8).toBe(
-            "new",
-        );
-    });
-
-    test("evicts the least-recently-used entry past the cap", () => {
-        for (let i = 0; i < 21; i++) {
-            cacheTimedText(`video-${i}`, {
-                events: [
-                    { tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "x" }] },
-                ],
-            });
-        }
-
-        expect(getCachedTimedText("video-0")).toBeNull();
-        expect(getCachedTimedText("video-20")).not.toBeNull();
-    });
-
-    test("accessing an entry makes it the most-recently-used", () => {
-        for (let i = 0; i < 20; i++) {
-            cacheTimedText(`video-${i}`, {
-                events: [
-                    { tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "x" }] },
-                ],
-            });
-        }
-
-        // Touching video-0 moves it to the back, so inserting a 21st entry
-        // evicts video-1 instead.
-        expect(getCachedTimedText("video-0")).not.toBeNull();
-        cacheTimedText("video-20", {
-            events: [{ tStartMs: 0, dDurationMs: 0, segs: [{ utf8: "x" }] }],
-        });
-
-        expect(getCachedTimedText("video-1")).toBeNull();
-        expect(getCachedTimedText("video-0")).not.toBeNull();
     });
 });

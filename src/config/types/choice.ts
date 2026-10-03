@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { ConfigType, type ConfigTypeProps } from "./_type";
 
 export type ChoiceConfigType = string;
@@ -34,6 +35,12 @@ export class ChoiceConfig<T extends ChoiceConfigType, M> extends ConfigType<
         }
         this.defaultMappedValue = defaultOption.mapped;
         this.mappedValue = this.defaultMappedValue;
+        this.schema = this.makeSchema();
+        this.linkStorage();
+    }
+
+    protected makeSchema() {
+        return z.enum(this.options.map((o) => o.value));
     }
 
     public setWithoutSaving(value: T) {

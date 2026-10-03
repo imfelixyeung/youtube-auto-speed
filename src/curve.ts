@@ -1,21 +1,12 @@
-import { clamp } from "./utils/clamp";
+import type { TimedInterval } from "./timed-interval";
 
-export type TimedInterval = {
-    start: number;
-    end: number;
-};
-
-export type TimedIntervalWithData<T> = TimedInterval & { data: T };
-export type TimedIntervalWithNumberData = TimedIntervalWithData<{
+export type NumberData = {
     label: string;
     value: number;
-}>;
+};
+export type TimedIntervalWithNumberData = TimedInterval<NumberData>;
 
 export type EasingFn = (t: number) => number;
-
-export function clamp01(value: number) {
-    return clamp(value, 0, 1);
-}
 
 export type Neighbors = {
     current: TimedIntervalWithNumberData | null;

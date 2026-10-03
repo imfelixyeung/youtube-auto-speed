@@ -23,7 +23,7 @@ export const PRESERVE_PITCH_ENABLED = new BooleanConfig({
     defaultValue: true,
 });
 
-export const SPEED_STEP = 0.25;
+export const SPEED_STEP = 0.01;
 
 export const RAMP_DURATION = new NumberConfig({
     displayName: "Ramp duration (s)",

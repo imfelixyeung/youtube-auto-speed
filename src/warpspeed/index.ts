@@ -15,6 +15,13 @@ class Star {
     public pz: number = 0;
     private initialZ: number = 0;
 
+    // Cached render state calculated in tick()
+    private headX: number = 0;
+    private headY: number = 0;
+    private tailX: number = 0;
+    private tailY: number = 0;
+    private isOffscreen: boolean = true;
+
     constructor(private options: Options) {
         this.random(true);
     }
@@ -35,37 +42,61 @@ class Star {
             this.z = this.initialZ;
         }
         this.pz = this.z;
+        this.isOffscreen = true;
     }
 
+    private static readonly PROJECTION_CONSTANT = 100;
     public tick(delta: number) {
         this.pz = this.z;
         this.z -= this.options.speed * delta;
 
-        if (this.z <= 0) return this.random();
+        const headZ = Math.max(this.z, 0.0001);
+        const tailZ = Math.max(this.pz, 0.0001);
+
+        const { cx, cy } = this.options;
+
+        // Compute perspective projection once per tick
+        const headScale = Star.PROJECTION_CONSTANT / headZ;
+        const tailScale = Star.PROJECTION_CONSTANT / tailZ;
+
+        this.headX = cx + this.x * headScale;
+        this.headY = cy + this.y * headScale;
+        this.tailX = cx + this.x * tailScale;
+        this.tailY = cy + this.y * tailScale;
+
+        this.setIsOffScreen();
+
+        // Respawn when z reaches limit or both ends leave the viewport
+        if (this.z <= 0 || this.isOffscreen) {
+            this.random();
+        }
     }
 
-    private static readonly PROJECTION_CONSTANT = 100;
+    private setIsOffScreen() {
+        const { width, height } = this.options;
+        const { headX, headY, tailX, tailY } = this;
+        const headOff =
+            headX < 0 || headX > width || headY < 0 || headY > height;
+        const tailOff =
+            tailX < 0 || tailX > width || tailY < 0 || tailY > height;
+
+        this.isOffscreen = headOff && tailOff;
+    }
+
     private static readonly STAR_TRAIL_HEAD = "rgba(240, 240, 255, 1)";
     private static readonly STAR_TRAIL_TAIL = "rgba(255, 240, 240, 0)";
-
     public draw(ctx: CanvasRenderingContext2D) {
-        const { width, height, cx, cy } = this.options;
-        // Perspective projection part 1.
-        const x = cx + (this.x / this.z) * Star.PROJECTION_CONSTANT;
-        const y = cy + (this.y / this.z) * Star.PROJECTION_CONSTANT;
+        if (this.isOffscreen) return;
+        const { headX, headY, tailX, tailY } = this;
 
-        // Don't draw stars that haven't entered the visible area yet.
-        if (x < 0 || x > width || y < 0 || y > height) {
-            return;
-        }
-
-        // Perspective projection part 2.
-        const px = cx + (this.x / this.pz) * Star.PROJECTION_CONSTANT;
-        const py = cy + (this.y / this.pz) * Star.PROJECTION_CONSTANT;
-
-        // Guard against zero-length lines to prevent invalid gradient coordinates
-        if (px !== x || py !== y) {
-            const gradient = ctx.createLinearGradient(px, py, x, y);
+        // Draw gradient if length > 0, otherwise standard line
+        if (tailX !== headX || tailY !== headY) {
+            const gradient = ctx.createLinearGradient(
+                tailX,
+                tailY,
+                headX,
+                headY,
+            );
             gradient.addColorStop(0, Star.STAR_TRAIL_TAIL);
             gradient.addColorStop(1, Star.STAR_TRAIL_HEAD);
             ctx.strokeStyle = gradient;
@@ -75,8 +106,8 @@ class Star {
 
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(x, y);
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(headX, headY);
         ctx.stroke();
     }
 }
